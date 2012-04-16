@@ -1,0 +1,21 @@
+th {background: #DBD7D5; padding-right: 10; padding-left: 10;}
+
+.header { position: fixed;}
+
+td {padding-left: 20; padding-bottom: 0} 
+
+.wait_odd {background: #FFFF66}
+
+.wait_even {background: #FFFF00}
+
+.recv_odd {background: #9BFAB7}
+
+.recv_even {background: #33CC33}
+
+.late_odd {background: #FF5050}
+
+.late_even {background: #FF0000}
+
+.error_odd {background: #3399FF}
+
+.error_even {background: #0033CC}
