@@ -39,7 +39,7 @@ sub loadConfig {
 	# set log to text file
 	$config->set('logging', 0);
 	# set to log to stdout (not recommended due to forks)
-	$config->set('stdout_logging', 0);
+	$config->set('stdout_logging', 1);
 	# calc_metrics logfile
 	$config->set('cm_logfile','logs/calc_metrics.log');
 	

@@ -131,6 +131,7 @@ sub calc_finish {
 	wout(2, "getting date to start from...");
 	$get_start->execute($exchcode);
 	my @gstart = $get_start->fetchrow_array();
+	$get_start->finish();
 	my $date_begin = $date_begin_init;
 	if ($gstart[0]) {	
 		$gstart[0] =~ m/(\d{4})-(\d{2})-(\d{2})/;

@@ -43,13 +43,12 @@ if (! -d $nets_dir) {
 
 my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");  
 	
-my $nndb_all = $nndb->prepare("select * from FinishTimes where ExchID = ? order by Date ASC");
 my $nndb_exchanges = $nndb->prepare("select distinct ExchID, ExchName from FinishTimes");
-my $nndb_count = $nndb->prepare("select count(*) from FinishTimes where ExchID = ?");
 
 $nndb_exchanges->execute();
 my $exchanges = $nndb_exchanges->fetchall_arrayref();
 $nndb_exchanges->finish();
+$nndb->disconnect();
 
 # create a ForkManager to manage forking training processes
 my $forkManager = new Parallel::ForkManager($config->training_procs());
@@ -71,6 +70,7 @@ foreach my $exchange (@{$exchanges}) {
 	$nndb_count->execute($exchid);
 	my @datacount = $nndb_count->fetchrow_array();
 	my $datacount = $datacount[0];
+	$nndb_count->finish();
 	print ELOG "$datacount\n";
 	
 	open (TRAIN, '>',"$logdir/$exchname-$exchid.xtrain");		
@@ -152,6 +152,7 @@ foreach my $exchange (@{$exchanges}) {
 		}
 		($ptimeoffset, $pmday, $pwday, $pvolume) = ($timeoffset, $mday, $wday, $volume);
 	}
+	$nndb_all->finish();
 	
 	# handle data points if flag enabled...
 	if ($test_flag) {
