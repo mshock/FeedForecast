@@ -4,6 +4,9 @@ use DBI;
 use Date::Calc qw(:all);
 use List::Util qw(shuffle);
 use Spreadsheet::WriteExcel;
+use File::Copy;
+use Scalar::Util qw(looks_like_number);
+use Parallel::ForkManager;
 use FeedForecast;
 
 my $config = FeedForecast::loadConfig();
@@ -19,7 +22,6 @@ my $chartdir = $config->chartdir();
 my $cascade_path = $config->cascade_path();
 my $nets_dir = $config->nets_dir();
 
-my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");  
 
 
 
@@ -39,6 +41,8 @@ if (! -d $nets_dir) {
 	mkdir($nets_dir) or die("could not create log dir: $!\n");
 }
 
+my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");  
+	
 my $nndb_all = $nndb->prepare("select * from FinishTimes where ExchID = ? order by Date ASC");
 my $nndb_exchanges = $nndb->prepare("select distinct ExchID, ExchName from FinishTimes");
 my $nndb_count = $nndb->prepare("select count(*) from FinishTimes where ExchID = ?");
@@ -46,14 +50,28 @@ my $nndb_count = $nndb->prepare("select count(*) from FinishTimes where ExchID =
 $nndb_exchanges->execute();
 my $exchanges = $nndb_exchanges->fetchall_arrayref();
 $nndb_exchanges->finish();
+
+# create a ForkManager to manage forking training processes
+my $forkManager = new Parallel::ForkManager($config->training_procs());
+
 foreach my $exchange (@{$exchanges}) {
+	# fork a new process if needed
+	$forkManager->start and next;
+	
+	my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");  
+	
+	my $nndb_count = $nndb->prepare("select count(*) from FinishTimes where ExchID = ?");
+	my $nndb_all = $nndb->prepare("select * from FinishTimes where ExchID = ? order by Date ASC");
+	
+	
 	my ($exchid, $exchname) = @{$exchange};
-	print LOG "writing training and test data for $exchname [$exchid]\n";
-	print LOG "counting number of history records...";
+	open ELOG, '>', "$logdir/$exchname-$exchid.log";
+	#print LOG "writing training and test data for $exchname [$exchid]\n";
+	print ELOG "counting number of history records...";
 	$nndb_count->execute($exchid);
 	my @datacount = $nndb_count->fetchrow_array();
 	my $datacount = $datacount[0];
-	print LOG "$datacount\n";
+	print ELOG "$datacount\n";
 	
 	open (TRAIN, '>',"$logdir/$exchname-$exchid.xtrain");		
 	open (TRAIN1, '>',"$logdir/$exchname-$exchid-1.xtrain");
@@ -78,7 +96,7 @@ foreach my $exchange (@{$exchanges}) {
 	my $last = 0;
 	my @points = ();
 	my ($ptimeoffset, $pmday, $pwday, $pvolume);
-	print LOG "retrieving all training data...\n";
+	#print ELOG "retrieving all training data...\n";
 	$nndb_all->execute($exchid);
 	my $rowcount = 0;
 	while (my @row = $nndb_all->fetchrow_array()) {
@@ -172,20 +190,39 @@ foreach my $exchange (@{$exchanges}) {
 	# generate Excel spreadsheet
 	$worksheet->write('A1', [$chartdata]);
 	
-	# generate net file using FANN binary
-	my $command = "\"$cascade_path\" \"$logdir\\$exchname-$exchid.test\" \"$logdir\\$exchname-$exchid.train\" \"$nets_dir\\$exchname-$exchid.net\"";
-	my $result = `$command`;
-	# regex parse this for the interesting bits...
-	$result =~ m/Train outputs    Current error: (.*). Epochs   (\d*)\n/;
-	my ($train_error, $epochs) = ($1, $2); 
-	$result =~ m/Train bit-fail: (\d*),/;
-	print LOG "\tError: $train_error\n\tBit Fail: $1\n\tEpochs: $epochs\n\n";
+	# train specified number of iterations of networks
+	# pick the best one to use
+	my %best_net;
+	foreach my $iteration (1..$config->training_iterations()) {
+		# generate net file using FANN binary
+		my $command = "\"$cascade_path\" \"$logdir\\$exchname-$exchid.test\" \"$logdir\\$exchname-$exchid.train\" \"$nets_dir\\tmp\\$exchname-$exchid.net.$iteration\"";
+		my $result = `$command`;
+		# regex parse this for the interesting bits...
+		$result =~ m/Train outputs    Current error: (.*). Epochs   (\d*)\n/;
+		my ($train_error, $epochs) = ($1, $2); 
+		$result =~ m/Train bit-fail: (\d*),/;
+		print ELOG "$iteration\tError: $train_error\n\tBit Fail: $1\n\tEpochs: $epochs\n\n";
+		# update best network
+		if ($iteration == 1 || ($train_error < $best_net{error})) {
+			$best_net{error} = $train_error;
+			$best_net{iteration} = $iteration;
+		}
+		# throw out exchanges that give crazy results
+		# they seem to take forever to calculate and result doesn't change
+		last if !looks_like_number($train_error);  
+	}
 	
-
-
+	print ELOG "net selected: " . $best_net{iteration} . " with error of: " . $best_net{error} . "\n\n";
+	# move the best network to the nets directory
+	copy("$nets_dir\\tmp\\$exchname-$exchid.net." . $best_net{iteration}, "$nets_dir\\$exchname-$exchid.net");
 	
+	close ELOG;
+	
+	# exit child process
+	$forkManager->finish;
 }
 
+$forkManager->wait_all_children;
 
 print LOG FeedForecast::currtime() . "\tdone\n";
 close LOG;

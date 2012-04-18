@@ -9,8 +9,7 @@ use strict;
 use AppConfig qw(:argcount);
 use Date::Calc qw(Add_Delta_Days Day_of_Week);
 
-# read configs from this file
-my $conf_file = 'FeedForecast.conf';
+return 1;
 
 
 # load config variables for implementers
@@ -26,9 +25,11 @@ sub loadConfig {
 	        },
 	});
 
+	$config->set('conf_file', 'FeedForecast.conf');
 	# load config file (override with CLI args)
-	$config->file($conf_file);
-
+	$config->file($config->conf_file());
+	
+	$config->args();
 	# date range before/after current day for time offset
 	$config->set('edaterange', 3);
 	# percent of transactions for exchange to be considered complete when calculating initial metrics
@@ -36,7 +37,9 @@ sub loadConfig {
 	# date to start reading db from if no records found
 	$config->set('date_begin_init', 20110122);
 	# set log to text file
-	$config->set('logging', 1);
+	$config->set('logging', 0);
+	# set to log to stdout (not recommended due to forks)
+	$config->set('stdout_logging', 0);
 	# calc_metrics logfile
 	$config->set('cm_logfile','logs/calc_metrics.log');
 	
@@ -95,7 +98,7 @@ sub loadConfig {
 	# build training run logfile
 	$config->set('bt_log','logs/bt.log');
 	# path to cascade training network exe
-	$config->set('cascade_path', "CascadeTest.exe");
+	$config->set('cascade_path', "bin\\CascadeTest.exe");
 	# flag to generate test data sets (required for shuffling data before training)
 	$config->set('test_flag', 1);
 	# shuffle training data flag
@@ -105,7 +108,7 @@ sub loadConfig {
 	# directory for network definition files
 	$config->set('nets_dir', 'nets');
 	# directory of network execution exe
-	$config->set('net_exe','TestNet.exe');
+	$config->set('net_exe','bin\\TestNet.exe');
 	# skip weekends flag
 	$config->set('weekend_flag', 0);
 	# log for last runnet (important - read by daemon)
@@ -128,8 +131,14 @@ sub loadConfig {
 	$config->set('serverport', 8888);
 	$config->set('serverlog', 'logs/server.log');
 	$config->set('serververbose', 1);
+	$config->set('training_iterations', 10);
+	# number of processes to fork during training
+	$config->set('training_procs', 5);
+	# number of processes to fork during metric refresh (calc_metrics)
+	$config->set('cm_procs', 10);
 	
-
+	# load config file (override with CLI args)
+	$config->file($config->conf_file());
 	
 	return $config;
 }

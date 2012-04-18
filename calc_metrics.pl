@@ -4,6 +4,7 @@ use File::stat;
 use Time::localtime;
 use DBI;
 use Date::Calc qw(Add_Delta_Days);
+use Parallel::ForkManager;
 use FeedForecast;
 
 # load config variables
@@ -26,12 +27,7 @@ if (! -d "logs") {
 
 open (LOGFILE, '>', $logfile);
 
-# open connections to DBs
-my $disfl = DBI->connect($config->disfl_connection()) or die("Couldn't connect to DISFL: $!\n");
-my $ds2_c = DBI->connect($config->ds2c_connection()) or die("Couldn't connect to DS2_change: $!\n");  
-my $ds2 = DBI->connect($config->ds2_connection()) or die("Couldn't connect to DS2: $!\n");
-my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
- 
+
 # turns out DS2 doesn't have any historical records here, but other feeds might
 #my $dii = DBI->connect("dbi:ODBC:Driver={SQL Server};Database=$database4;Server=$server1;UID=$db_user1;PWD=$db_pwd1") or die("Couldn't connect to DII: $!\n");
 		
@@ -44,12 +40,19 @@ load_exchanges();
 
 
 open EXCH, '<', $exchange_log;
+my @exchanges = <EXCH>;
+close EXCH;
 
-
+# create a ForkManager
+my $forkManager = new Parallel::ForkManager($config->cm_procs());
 
 # iterate over all exchanges, calculate completion time for each date
-while (<EXCH>) {
-	chomp;	
+foreach (@exchanges) {
+	$forkManager->start and next;
+	chomp;
+	
+	my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
+ 		
 	my ($exchcode, $exchname) = split(',', $_);
 	
 	open (TFILE, '>', $config->exchmetrics_dir() . "$exchname-$exchcode.log");
@@ -70,10 +73,16 @@ while (<EXCH>) {
 	}
 	
 	close TFILE;
+	
+	$nndb->disconnect();
+	
+	$forkManager->finish;
 }
 
+$forkManager->wait_all_children;
+
 wout(1,"finished");
-close EXCH;
+
 close LOGFILE;
 
 # build the training files
@@ -88,6 +97,12 @@ exec(sprintf("perl \"%s\"", $config->buildtraining_loc()));
 
 sub calc_finish {
 	my ($exchcode) = @_;
+	
+	# open connections to DBs
+	my $disfl = DBI->connect($config->disfl_connection()) or die("Couldn't connect to DISFL: $!\n");
+	my $ds2_c = DBI->connect($config->ds2c_connection()) or die("Couldn't connect to DS2_change: $!\n");  
+	my $ds2 = DBI->connect($config->ds2_connection()) or die("Couldn't connect to DS2: $!\n");
+	my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
 	
 	# get the date to start from from the nndb
 	my $get_start = $nndb->prepare("select max(Date) from FinishTimes
@@ -242,6 +257,11 @@ sub calc_finish {
 	
 	$get_md_counts->finish();
 	
+	$disfl->disconnect();
+	$ds2_c->disconnect();
+	$ds2->disconnect();
+	$nndb->disconnect();
+	
 	return %finishtimes;
 
 }
@@ -253,6 +273,9 @@ sub load_exchanges {
 	
 	
 	if (! -e $exchange_log) {
+		my $ds2_c = DBI->connect($config->ds2c_connection()) or die("Couldn't connect to DS2_change: $!\n");  
+		my $ds2 = DBI->connect($config->ds2_connection()) or die("Couldn't connect to DS2: $!\n");
+		
 		# get a list of all the exchanges present in DS2 
 		my $get_exchanges = $ds2_c->prepare("SELECT distinct ExchIntCode
   			FROM [DataStream2_Change].[arc].[DS2PrimQtPrc]
@@ -280,6 +303,8 @@ sub load_exchanges {
 		}
 		$get_exchanges->finish();
 		close EXCHLOG;
+		$ds2_c->disconnect();
+		$ds2->disconnect();
 	}
 	else {
 		my $creation = ctime(stat($exchange_log)->mtime);
@@ -289,6 +314,9 @@ sub load_exchanges {
 
 # write to stdout
 sub wout {
+	if (!$config->stdout_logging()) {
+		return;	
+	}
 	my ($level, $line) = @_;
 	my $tabs = "\t" x $level; 
 	print FeedForecast::calc_date() . "$tabs$line\n";
