@@ -133,9 +133,12 @@ sub loadConfig {
 	$config->set('serververbose', 1);
 	$config->set('training_iterations', 10);
 	# number of processes to fork during training
-	$config->set('training_procs', 5);
+	$config->set('training_procs', 3);
 	# number of processes to fork during metric refresh (calc_metrics)
 	$config->set('cm_procs', 10);
+	# number of processes to fork while doing daily network run
+	$config->set('runnet_procs', 10);
+	$config->set('runnet_dryrun', 0);
 	
 	# load config file (override with CLI args)
 	$config->file($config->conf_file());

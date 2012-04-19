@@ -65,7 +65,7 @@ foreach my $exchange (@{$exchanges}) {
 	
 	my ($exchid, $exchname) = @{$exchange};
 	open ELOG, '>', "$logdir/$exchname-$exchid.log";
-	#print LOG "writing training and test data for $exchname [$exchid]\n";
+	print FeedForecast::currtime() . "\twriting training and test data for $exchname [$exchid]\n";
 	print ELOG "counting number of history records...";
 	$nndb_count->execute($exchid);
 	my @datacount = $nndb_count->fetchrow_array();

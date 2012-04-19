@@ -71,19 +71,22 @@ sub make_pass {
 				group by exchintcode
 				order by 1 ASC");
 	
-	# read the forecasting metrics
-	open (RLOG, '<',sprintf($runnet_log,$date));	
-	my @rlog = <RLOG>;
-	close RLOG;
 	
 	# load hash with exchange forecasts
+	
+	my $select_result = $nndb->prepare("select [ExchID]
+      ,[ExchName]
+      ,[InputOffset]
+      ,[DayofMonth]
+      ,[DayofWeek]
+      ,[InputVolume]
+      ,[OutputOffset]
+      ,[OutputVolume] from NetResults where
+										[Date] = '$date'");
+	$select_result->execute();
 	my %exchhash = ();
-	foreach my $exchange (@rlog) {
-		chomp $exchange;
-		if (!$exchange) {
-			next;
-		}
-		my ($name,$id,$timeoffset,$dom,$dow,$vol,$timeoffset2,$vol2) = split ',', $exchange;
+	while (my @row = $select_result->fetchrow_array()) {
+		my ($id,$name,$timeoffset,$dom,$dow,$vol,$timeoffset2,$vol2) = @row;
 		#print "$name,$id,$timeoffset,$dom,$dow,$vol,$timeoffset2,$vol2\n";
 		#print "loaded exchange: $name\n";
 		# detect bad NN outputs
@@ -113,6 +116,7 @@ sub make_pass {
 			state => $state,
 		);
 	}
+	$select_result->finish();
 	
 	$get_cur_count->execute();
 	# check to see if the current counts have reached the threshold per exchange

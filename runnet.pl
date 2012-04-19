@@ -7,20 +7,16 @@
 use strict;
 use DBI;
 use Date::Calc qw(Add_Delta_Days Day_of_Week);
+use Parallel::ForkManager;
+use Scalar::Util qw(looks_like_number);
 use FeedForecast;
 
 my $config = FeedForecast::loadConfig();
 
-# config db connects
-my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");  
-my $disfl = DBI->connect($config->disfl_connection()) or die("Couldn't connect to DISFL: $!\n");
-my $ds2_c = DBI->connect($config->ds2c_connection()) or die("Couldn't connect to DS2_change: $!\n");  
-my $ds2 = DBI->connect($config->ds2_connection()) or die("Couldn't connect to DS2: $!\n");
-
 my $netexe = $config->net_exe();
 my $exchlog = $config->exchange_log();
 my $networkdir = $config->nets_dir();
-
+my $dryrun = $config->runnet_dryrun();
 
 # automatically skip weekends when calculating previous day
 my $weekend_flag = $config->weekend_flag();
@@ -29,10 +25,9 @@ my $runnet_log = sprintf($config->runnet_log(),FeedForecast::calc_date());
 
 run_nets();
 
-print "Done.\n";
+print FeedForecast::currtime() . "\tdone.\n";
 
 # subs
-
 
 sub run_nets {
 	
@@ -47,33 +42,42 @@ sub run_nets {
 	close LOG;
 	
 	# run each network
-	print "running nets\n\n";
+	print FeedForecast::currtime() . "\trunning nets\n\n";
+	my $forkManager = new Parallel::ForkManager($config->runnet_procs());
 	foreach my $network (@networks) {
+		$forkManager->start and next;
+		my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
 		if ($network =~ m/^(.*)-(\d*)\.net/) {
 			my $exchname = $1;
 			my $exchid = $2;
 			my $exectime = time;
-			open LOG, '>>', $runnet_log;
-			print "file: $network\nexchange: $exchname\nid: $exchid\n";
+			#print "file: $network\nexchange: $exchname\nid: $exchid\n";
 			# get most recent day's metrics from database
 			my ($timeoffset, $dom, $dow, $vol) = divine_metrics($exchname, $exchid);
 			my $date = FeedForecast::calc_date();
 			# catch errors, skip this exchange
 			if ($timeoffset eq "error") {
-				print "skipping $exchname:$exchid\n\n";
+				#print "skipping $exchname:$exchid\n\n";
+				# got to stop child thread, otherwise it will enter another loop
+				$forkManager->finish;
 				next;
 			}
-			print "metrics divined: $timeoffset, $dom, $dow, $vol\n";
+			#print "metrics divined: $timeoffset, $dom, $dow, $vol\n";
 			# execute network over these metrics	
 			$netexe =~ s/\//\\/g;
 			#print "\"$netexe\" test $timeoffset $dom $dow $vol";
 			my $result = `\"$netexe\" \"$networkdir\\$network\" $timeoffset $dom $dow $vol`;
-			print "$exchname:\t";
-			print "$timeoffset, $dom, $dow, $vol = $result\n";
 			$exectime = time - $exectime;
-			print "execution time: $exectime sec\n\n";
+			#print "execution time: $exectime sec\n\n";
 			# round the results
 			my @result = split(',', $result);
+			if (!looks_like_number($result[0]) || !looks_like_number($result[1])) {
+				print FeedForecast::currtime() . "\t$exchname:\t$timeoffset, $dom, $dow, $vol = bad network output\n";
+				$forkManager->finish;
+				next;
+			}
+			print FeedForecast::currtime() . "\t$exchname:\t$timeoffset, $dom, $dow, $vol = $result\n";	
+			
 			my $to2 = int($result[0] + .5);
 			my $vol2 = int($result[1] + .5);
 			my $curdate = FeedForecast::currtime();
@@ -81,19 +85,31 @@ sub run_nets {
 				(Date, ExchID, ExchName, InputOffset, DayofMonth, DayofWeek, InputVolume, OutputOffset, OutputVolume, InsDateTime) 
 				values
 				('$date','$exchid','$exchname','$timeoffset','$dom','$dow','$vol','$to2','$vol2','$curdate')");
-			$nndb_insert->execute();
+			$nndb_insert->execute() if !$dryrun;
+			$nndb_insert->finish();
+			open LOG, '>>', $runnet_log;
 			print LOG "$exchname,$exchid,$timeoffset,$dom,$dow,$vol,$to2,$vol2\n";
 			close LOG;
+			$nndb->disconnect();
+			
 		}
+		$forkManager->finish;
 	}
+	$forkManager->wait_all_children;
 }
 
 sub divine_metrics {
 	my ($exchname, $exchid) = @_;
 	#open LOG, '>', "log.txt";
 	
+	  
+	my $disfl = DBI->connect($config->disfl_connection()) or die("Couldn't connect to DISFL: $!\n");
+	my $ds2 = DBI->connect($config->ds2_connection()) or die("Couldn't connect to DS2: $!\n");
+	my $ds2_c = DBI->connect($config->ds2c_connection()) or die("Couldn't connect to DS2_change: $!\n");  
+	
+	
 	my ($date, $mday, $wday) = y_date();
-	print "calculated date metrics: $date, $mday, $wday\n";
+	#print "calculated date metrics: $date, $mday, $wday\n";
 	
 	my $get_md_counts = $ds2->prepare("select count(infocode) 
 			from [DataStream2].[dbo].[DS2PrimQtPrc] with (NOLOCK)
@@ -106,19 +122,19 @@ sub divine_metrics {
 	my $decrement_counter = 0;
 	my @md_count = ();
 	while ($found_flag) {
-		print "executing query to find transaction volume on $date...";
+		#print "executing query to find transaction volume on $date...";
 		# calculate completion time for this date
 		$get_md_counts->execute($date);
-		print "done\n";
+		#print "done\n";
 		@md_count = $get_md_counts->fetchrow_array();
 		
 		if (!$md_count[0]) {
 			if (++$decrement_counter == 7) {
-				print "no records found for $exchname:$exchid for the past week\n";
+				#print "no records found for $exchname:$exchid for the past week\n";
 				return ("error",0,0,0);
 			}
 			
-			print "no records for volume at $date, rolling back a day\n";
+			#print "no records for volume at $date, rolling back a day\n";
 			($date, $mday, $wday) = FeedForecast::decrement_day($date);
 		}
 		else {
@@ -140,14 +156,14 @@ sub divine_metrics {
 		where DISTransactionNumber = ?
 		and DataFeedId = 'DS2_EQIND_DAILY'");
   
-  	print "running query to find all transactions for exchange...";
+  	#print "running query to find all transactions for exchange...";
   	$get_trans->execute($exchid);
-  	print "done\n";
+  	#print "done\n";
 	my %transactions = ();
 	my %errors = ();
 	my %infocodes = ();
 	
-	print "compiling all transactions...";
+	#print "compiling all transactions...";
 	while (my @t = $get_trans->fetchrow_array()) {
 		my ($tid, $mdate, $infocode) = @t;
 		#print "$tid $mdate $infocode\n";
@@ -172,11 +188,11 @@ sub divine_metrics {
 		push @{$infocodes{$infocode}}, $transactions{$tid};
 	}
 	$get_trans->finish();
-	print "done\n";
+	#print "done\n";
 	#close LOG;
 
 	
-	print "getting earliest execution time per infocode...";
+	#print "getting earliest execution time per infocode...";
 	my @trans_info = ();
 	# get earliest complete transaction for each infocode
 	foreach my $ic (keys %infocodes) {
@@ -191,11 +207,16 @@ sub divine_metrics {
 	@trans_info = splice(@trans_info, 0, .98 * $md_count[0]);
 	# quick check for db inconsistancy
 	if (!scalar(@trans_info)) {
-		print "\nbad number of change records (wtf)...\n";
+		#print "\nbad number of change records (wtf)...\n";
 		return ("error",0,0,0);
 	}
 	my $offset = calc_offset($date,$trans_info[-1]);
-	print "done\n";
+	#print "done\n";
+	
+	$disfl->disconnect();
+	$ds2->disconnect();
+	$ds2_c->disconnect();
+	
 	return ($offset, $mday, $wday, $md_count[0]);
 }
 
