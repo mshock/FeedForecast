@@ -1,10 +1,13 @@
 #!/usr/bin/perl -w
+my $start_time = time;
+
 use strict;
 use File::stat;
 use Time::localtime;
 use DBI;
 use Date::Calc qw(Add_Delta_Days);
 use Parallel::ForkManager;
+use Time::Duration;
 use FeedForecast;
 
 # load config variables
@@ -82,6 +85,8 @@ foreach (@exchanges) {
 $forkManager->wait_all_children;
 
 wout(1,"finished");
+
+print LOGFILE FeedForecast::currtime() . "\tfinished in " . duration(time - $start_time) . "\n";
 
 close LOGFILE;
 

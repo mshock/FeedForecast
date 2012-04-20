@@ -1,4 +1,6 @@
 #!/usr/bin/perl -w
+my $start_time = time;
+
 use strict;
 use DBI;
 use Date::Calc qw(:all);
@@ -7,6 +9,7 @@ use Spreadsheet::WriteExcel;
 use File::Copy;
 use Scalar::Util qw(looks_like_number);
 use Parallel::ForkManager;
+use Time::Duration;
 use FeedForecast;
 
 my $config = FeedForecast::loadConfig();
@@ -107,7 +110,7 @@ foreach my $exchange (@{$exchanges}) {
 		
 		my ($date, $finish, $volume) = ($row[1],$row[4],$row[5]);
 		if (!$finish || !$volume) {
-			print LOG "missing record column, skipping $date\n";
+			#print LOG "missing record column, skipping $date\n";
 			next;
 		}
 		
@@ -225,7 +228,8 @@ foreach my $exchange (@{$exchanges}) {
 
 $forkManager->wait_all_children;
 
-print LOG FeedForecast::currtime() . "\tdone\n";
+
+print LOG FeedForecast::currtime() . "\tdone in " . duration(time - $start_time) . "\n";
 close LOG;
 
 
