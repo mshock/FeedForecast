@@ -25,7 +25,7 @@ sub handle_request {
 	my $show_late = $cgi->param('show_late');
 	$show_late = $show_late ? '-l' : '';
 	my $search = $cgi->param('search');
-	$search = $search ? "-s $search" : '';
+	$search = $search ? "-s \"$search\"" : '';
 	my $search_type = $cgi->param('search_type');
 	$search_type = $search_type ? "-t $search_type" : '';
 	

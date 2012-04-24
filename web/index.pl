@@ -5,6 +5,7 @@
 use strict;
 use DBI;
 use Getopt::Std;
+use URI::Escape;
 use Date::Manip qw(ParseDate Date_Cmp DateCalc);
 use FeedForecast;
 
@@ -32,8 +33,14 @@ if ($opt_l) {
 }
 
 # search params
+my $search = '';
 if ($opt_s && $opt_t) {
-	
+	if ($opt_t eq 'exchange') {
+		$search = "and nr.ExchName = '$opt_s'";
+	}
+	elsif ($opt_t eq 'country') {
+		$search = '';
+	}
 }
 
 my $printdate = pretty_date($dbdate);
@@ -46,7 +53,8 @@ my $result = $nndb->prepare("select ExchName, nr.ExchID, InputOffset, DayofMonth
 				from NetResults nr join DaemonLogs dl 
 				on nr.Date = dl.Date and nr.ExchID = dl.ExchID
 				where 
-				 nr.Date = '$dbdate'");
+				 nr.Date = '$dbdate'
+				 $search");
 $result->execute();
 
 $dbdate =~ m/(\d{4})(\d\d)(\d\d)/;
@@ -67,20 +75,21 @@ print "<html>
 		</tr>
 		<tr>
 			<th colspan='3'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
-			<th colspan='4'>
-				<form>
+			<th colspan='5'>
+				<form method='GET'>
 				<input type='submit' value='search' /> 
+				<input type='button' value='reset' onclick='parent.location=\"?\"'/>
 				<input type='text' name='search' value='$opt_s'/>
 				<select name='search_type'>
 					<option value='exchange'>Exchange</option>
 					<option value='country'>Country</option>
 				</select>
 				|
-				<input type='checkbox' name='show_late' onclick='this.form.submit();' value='1' $late_checked/> Show Late
+				<input type='checkbox' name='show_late' onclick='this.form.submit();' value='true' $late_checked/> Show Late
 				<input type='hidden' name='date' value='$dbdate' />
 				</form>
 			</th>
-			<th colspan='4'>($nextdate) next <a href='?date=$nextdate'>>></a></th>
+			<th colspan='3'>($nextdate) next <a href='?date=$nextdate'>>></a></th>
 		</tr>
 		<tr >
 			<th>Exchange Name</th>
@@ -120,7 +129,7 @@ while(my @row = $result->fetchrow_array()) {
 }
 
 # only get the recv'd rows if we're showing recv'd but late (checkbox)
-my @rows = $opt_l ? (@recv) : (@error, @late, @wait, @recv);
+my @rows = $opt_l ? (@late, @recv) : (@error, @late, @wait, @recv);
 my $even_odd = 0;
 my $eo = '';
 foreach my $row (@rows) {
@@ -129,7 +138,7 @@ foreach my $row (@rows) {
 	my $otime = calcTime($ooffset);
 	
 	# if showing late compare times to find late 
-	if ($opt_l) {
+	if ($opt_l && $state eq 'recv') {
 		next if (compareTimes($otime, $insdt) != -1);
 	}
 	
