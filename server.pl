@@ -5,6 +5,7 @@
 package WebServer;
 
 use strict;
+use Date::Manip qw(ParseDate UnixDate);
 use base qw(HTTP::Server::Simple::CGI);
 use HTTP::Server::Simple::Static;
 use FeedForecast;
@@ -20,15 +21,11 @@ $server->run();
 sub handle_request {
 	my ($self, $cgi) = @_;
 	
-	my $date = $cgi->param('date');
-	$date = $date ? "-d $date" : '';
-	my $show_late = $cgi->param('show_late');
-	$show_late = $show_late ? '-l' : '';
-	my $search = $cgi->param('search');
-	$search = $search ? "-s \"$search\"" : '';
-	my $search_type = $cgi->param('search_type');
-	$search_type = $search_type ? "-t $search_type" : '';
-	
+	my $date = $cgi->param('date') ? '-d ' . parse_date($cgi->param('date')) : '';
+	my $show_late = $cgi->param('show_late') ? '-l' : '';
+	my $search = $cgi->param('search') ? sprintf("-s \"%s\"",$cgi->param('search')) : '';
+	my $search_type = $cgi->param('search_type') ? '-t ' . $cgi->param('search_type') : '';
+
 	my $logstring = FeedForecast::currtime() . sprintf("\thandling request from %s for date %s\n",
 		$cgi->remote_addr, $date ? $date : '<auto:now>');
 	open LOG, '>>', $log;
@@ -44,4 +41,11 @@ sub handle_request {
 sub print_banner {
 	my $self = shift;
 	print "FeedForecast web application started successfully at http://localhost:" . $self->port . "/\n";
+}
+
+# turn user input into a julian date
+sub parse_date {
+	my ($input_date) = @_;
+	$input_date = ParseDate($input_date);
+	return UnixDate($input_date, "%Y%m%d");
 }

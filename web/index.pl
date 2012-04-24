@@ -34,12 +34,16 @@ if ($opt_l) {
 
 # search params
 my $search = '';
+my $exch_selected = '';
+my $country_selected = '';
 if ($opt_s && $opt_t) {
 	if ($opt_t eq 'exchange') {
 		$search = "and nr.ExchName = '$opt_s'";
+		$exch_selected = 'selected=true'; 
 	}
 	elsif ($opt_t eq 'country') {
 		$search = '';
+		$country_selected = 'selected=true';
 	}
 }
 
@@ -58,6 +62,7 @@ my $result = $nndb->prepare("select ExchName, nr.ExchID, InputOffset, DayofMonth
 $result->execute();
 
 $dbdate =~ m/(\d{4})(\d\d)(\d\d)/;
+my $pretty_date = sprintf("%u/%u/%u", $2, $3, $1);
 my $nextdate = FeedForecast::increment_day("$1-$2-$3");
 my ($prevdate, $trash1, $trash2) = FeedForecast::decrement_day($dbdate);
 
@@ -74,15 +79,16 @@ print "<html>
 			<th colspan='11' ><h2>Forecasts for $printdate</h2></th>
 		</tr>
 		<tr>
-			<th colspan='3'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
-			<th colspan='5'>
+			<th colspan='2'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
+			<th colspan='6'>
 				<form method='GET'>
 				<input type='submit' value='search' /> 
 				<input type='button' value='reset' onclick='parent.location=\"?\"'/>
+				<input type='text' name='date' value='$pretty_date' />
 				<input type='text' name='search' value='$opt_s'/>
 				<select name='search_type'>
-					<option value='exchange'>Exchange</option>
-					<option value='country'>Country</option>
+					<option value='exchange' $exch_selected >Exchange</option>
+					<option value='country' $country_selected >Country</option>
 				</select>
 				|
 				<input type='checkbox' name='show_late' onclick='this.form.submit();' value='true' $late_checked/> Show Late
