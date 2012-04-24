@@ -42,7 +42,7 @@ if ($opt_s && $opt_t) {
 		$exch_selected = 'selected=true'; 
 	}
 	elsif ($opt_t eq 'country') {
-		$search = '';
+		$search = "and r.name_ = '$opt_s'";
 		$country_selected = 'selected=true';
 	}
 }
@@ -53,11 +53,17 @@ if ($dbdate == FeedForecast::calc_date()) {
 }
 
 
-my $result = $nndb->prepare("select ExchName, nr.ExchID, InputOffset, DayofMonth, DayofWeek, InputVolume, OutputOffset, OutputVolume, CurrentVolume, State, dl.InsDateTime
-				from NetResults nr join DaemonLogs dl 
-				on nr.Date = dl.Date and nr.ExchID = dl.ExchID
+my $result = $nndb->prepare("select e.ExchName, nr.ExchID, InputOffset, DayofMonth, DayofWeek, InputVolume, OutputOffset, OutputVolume, CurrentVolume, State, dl.InsDateTime, r.name_
+				from NetResults nr 
+					join DaemonLogs dl 
+						on nr.Date = dl.Date and nr.ExchID = dl.ExchID
+					join exchanges e
+						on nr.ExchID = e.ExchIntCode
+					join regions r
+						on r.region = e.exchctrycode
 				where 
-				 nr.Date = '$dbdate'
+				 nr.Date = '$dbdate' and
+				 r.regcodetypeid = 1
 				 $search");
 $result->execute();
 
@@ -99,6 +105,7 @@ print "<html>
 		</tr>
 		<tr >
 			<th>Exchange Name</th>
+			<th>Country</th>
 			<th>Exchange ID</th>
 			<th>Previous Time</th>
 			<th>Input DOM</th>
@@ -139,7 +146,7 @@ my @rows = $opt_l ? (@late, @recv) : (@error, @late, @wait, @recv);
 my $even_odd = 0;
 my $eo = '';
 foreach my $row (@rows) {
-	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt) = @{$row};
+	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt, $country) = @{$row};
 	
 	my $otime = calcTime($ooffset);
 	
@@ -170,6 +177,7 @@ foreach my $row (@rows) {
 	
 	print "<tr class='$row_class'>
 	<td>$name</td>
+	<td>$country</td>
 	<td>$id</td>
 	<td>$itime ($ioffset)</td>
 	<td>$dom</td>
