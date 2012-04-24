@@ -82,11 +82,11 @@ print "<html>
 	<table cellspacing='0' id='fixedheader'>
 		<thead>
 		<tr>
-			<th colspan='11' ><h2>Forecasts for $printdate</h2></th>
+			<th colspan='12' ><h2>Forecasts for $printdate</h2></th>
 		</tr>
 		<tr>
 			<th colspan='2'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
-			<th colspan='6'>
+			<th colspan='7'>
 				<form method='GET'>
 				<input type='submit' value='search' /> 
 				<input type='button' value='reset' onclick='parent.location=\"?\"'/>
