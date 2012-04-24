@@ -21,6 +21,13 @@ sub handle_request {
 	my ($self, $cgi) = @_;
 	
 	my $date = $cgi->param('date');
+	$date = $date ? "-d $date" : '';
+	my $show_late = $cgi->param('show_late');
+	$show_late = $show_late ? '-l' : '';
+	my $search = $cgi->param('search');
+	$search = $search ? "-s $search" : '';
+	my $search_type = $cgi->param('search_type');
+	$search_type = $search_type ? "-t $search_type" : '';
 	
 	my $logstring = FeedForecast::currtime() . sprintf("\thandling request from %s for date %s\n",
 		$cgi->remote_addr, $date ? $date : '<auto:now>');
@@ -31,7 +38,7 @@ sub handle_request {
 	$self->serve_static($cgi, './web');
 	print "HTTP/1.0 200 OK\r\n";
 	print "Content-type: text/html\n\n";
-	print `perl web/index.pl "$date"`;
+	print `perl web/index.pl $date $search_type $search $show_late`;
 }
 
 sub print_banner {

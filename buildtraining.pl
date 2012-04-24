@@ -232,6 +232,10 @@ $forkManager->wait_all_children;
 print LOG FeedForecast::currtime() . "\tdone in " . duration(time - $start_time) . "\n";
 close LOG;
 
+# convert a time offset to an excel datetime string
+sub offset_datetime {
+	
+}
 
 # calculate weekday from julian
 sub parsedate {

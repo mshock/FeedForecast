@@ -23,6 +23,8 @@ my $weekend_flag = $config->weekend_flag();
 
 my $runnet_log = sprintf($config->runnet_log(),FeedForecast::calc_date());
 
+print FeedForecast::currtime() . "\trunning nets\n\n";
+
 run_nets();
 
 print FeedForecast::currtime() . "\tdone.\n";
@@ -42,7 +44,7 @@ sub run_nets {
 	close LOG;
 	
 	# run each network
-	print FeedForecast::currtime() . "\trunning nets\n\n";
+	
 	my $forkManager = new Parallel::ForkManager($config->runnet_procs());
 	foreach my $network (@networks) {
 		$forkManager->start and next;

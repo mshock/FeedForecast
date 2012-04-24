@@ -29,7 +29,7 @@ sub loadConfig {
 	# load config file (override with CLI args)
 	$config->file($config->conf_file());
 	
-	$config->args();
+	#$config->args();
 	# date range before/after current day for time offset
 	$config->set('edaterange', 3);
 	# percent of transactions for exchange to be considered complete when calculating initial metrics
@@ -137,7 +137,7 @@ sub loadConfig {
 	# number of processes to fork during metric refresh (calc_metrics)
 	$config->set('cm_procs', 10);
 	# number of processes to fork while doing daily network run
-	$config->set('runnet_procs', 10);
+	$config->set('runnet_procs', 5);
 	$config->set('runnet_dryrun', 0);
 	
 	# load config file (override with CLI args)

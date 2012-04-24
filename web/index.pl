@@ -4,7 +4,13 @@
 
 use strict;
 use DBI;
+use Getopt::Std;
+use Date::Manip qw(ParseDate Date_Cmp DateCalc);
 use FeedForecast;
+
+use vars qw($opt_d $opt_l $opt_s $opt_t);
+
+getopts('d:ls:t:');
 
 my $config = FeedForecast::loadConfig();
 
@@ -15,8 +21,19 @@ my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to 
 
 # get the date to look at
 my $dbdate = FeedForecast::calc_date();
-if ($ARGV[0] && $ARGV[0] =~ m/^\d{8}$/) {
-	$dbdate = $ARGV[0];
+if ($opt_d && $opt_d =~ m/^\d{8}$/) {
+	$dbdate = $opt_d;
+}
+
+# display only recv'd and late
+my $late_checked = '';
+if ($opt_l) {
+	$late_checked = 'checked=true';
+}
+
+# search params
+if ($opt_s && $opt_t) {
+	
 }
 
 my $printdate = pretty_date($dbdate);
@@ -49,8 +66,21 @@ print "<html>
 			<th colspan='11' ><h2>Forecasts for $printdate</h2></th>
 		</tr>
 		<tr>
-			<th colspan='6'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
-			<th colspan='5'>($nextdate) next <a href='?date=$nextdate'>>></a></th>
+			<th colspan='3'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
+			<th colspan='4'>
+				<form>
+				<input type='submit' value='search' /> 
+				<input type='text' name='search' value='$opt_s'/>
+				<select name='search_type'>
+					<option value='exchange'>Exchange</option>
+					<option value='country'>Country</option>
+				</select>
+				|
+				<input type='checkbox' name='show_late' onclick='this.form.submit();' value='1' $late_checked/> Show Late
+				<input type='hidden' name='date' value='$dbdate' />
+				</form>
+			</th>
+			<th colspan='4'>($nextdate) next <a href='?date=$nextdate'>>></a></th>
 		</tr>
 		<tr >
 			<th>Exchange Name</th>
@@ -89,20 +119,29 @@ while(my @row = $result->fetchrow_array()) {
 	}
 }
 
-my @rows = (@error, @late, @wait, @recv);
+# only get the recv'd rows if we're showing recv'd but late (checkbox)
+my @rows = $opt_l ? (@recv) : (@error, @late, @wait, @recv);
 my $even_odd = 0;
 my $eo = '';
-foreach my $row (@rows) { 
+foreach my $row (@rows) {
+	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt) = @{$row};
+	
+	my $otime = calcTime($ooffset);
+	
+	# if showing late compare times to find late 
+	if ($opt_l) {
+		next if (compareTimes($otime, $insdt) != -1);
+	}
+	
 	if ($even_odd++ % 2) {
 		$eo = 'odd';
 	}
 	else {
 		$eo = 'even';
 	}
-	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt) = @{$row};
 	
 	my $itime = calcTime($ioffset);
-	my $otime = calcTime($ooffset);
+	
 	$insdt =~ s/:\d\d\..*//;
 	$insdt =~ s/0(\d:)/$1/;
 	if (!$count) {
@@ -146,6 +185,30 @@ sub pretty_date {
 	$date =~ m/(\d{4})(\d{2})(\d{2})/;
 	return "$1/$2/$3";
 	
+}
+
+sub compareTimes {
+	my ($otime, $insert_dt) = @_;
+	# feed offset converted to prev/cur/next hh:mm
+	# and sql datetime in y-m-d hh:mm
+	my $date = $dbdate;
+	if ($otime =~ m/prev/) {
+		($date,,) = FeedForecast::decrement_day($dbdate);	
+	}
+	elsif ($otime =~ m/next/) {
+		$dbdate =~ m/(\d{4})(\d{2})(\d{2})/;
+		my $tmpdate = "$1-$2-$3";
+		$date = FeedForecast::increment_day($tmpdate);
+	}
+	
+	$otime =~ m/(\d+:\d+)/;
+	$otime = "$date $1";
+	
+	my $forecasted = ParseDate($otime);
+	$forecasted = DateCalc($forecasted, 'in 30 minutes');
+	my $recvd = ParseDate($insert_dt);
+	
+	return Date_Cmp($forecasted, $recvd);
 }
 
 # function to calculate time of day from minute offset
