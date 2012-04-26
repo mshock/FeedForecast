@@ -25,7 +25,7 @@ my $dbdate = FeedForecast::calc_date();
 if ($opt_d && $opt_d =~ m/^\d{8}$/) {
 	$dbdate = $opt_d;
 }
-
+print $opt_d;
 # display only recv'd and late
 my $late_checked = '';
 if ($opt_l) {
@@ -90,7 +90,7 @@ print "<html>
 </head>
 <body>
 	<form method='GET'>
-	<input type='hidden' name='date' value='$dbdate' />
+	
 	<table cellspacing='0' width='100%'>
 		<thead>
 		<tr>
