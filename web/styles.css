@@ -19,3 +19,19 @@ td {padding-left: 20; padding-bottom: 0}
 .error_odd {background: #3399FF}
 
 .error_even {background: #0033CC}
+
+input.headerunsort {
+border:0;
+padding:0;
+color: inherit;
+background:transparent;
+}
+
+input.headersort {
+border:0;
+padding:0;
+color: inherit;
+background:transparent;
+font-weight:bold;
+
+}

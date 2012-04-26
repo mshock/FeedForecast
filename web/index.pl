@@ -9,9 +9,9 @@ use URI::Escape;
 use Date::Manip qw(ParseDate Date_Cmp DateCalc);
 use FeedForecast;
 
-use vars qw($opt_d $opt_l $opt_s $opt_t);
+use vars qw($opt_d $opt_l $opt_s $opt_t $opt_o);
 
-getopts('d:ls:t:');
+getopts('d:ls:t:o:');
 
 my $config = FeedForecast::loadConfig();
 
@@ -47,6 +47,16 @@ if ($opt_s && $opt_t) {
 	}
 }
 
+# sort params
+my ($sort_sql, $sort_index) = get_sort_sql($opt_o);
+# make sorted column header bold
+my @colsort;
+foreach (0..10) {
+	$colsort[$_] = $sort_index == $_ ? 'headersort' : 'headerunsort';
+}
+
+
+
 my $printdate = pretty_date($dbdate);
 if ($dbdate == FeedForecast::calc_date()) {
 	$printdate = FeedForecast::currtime();
@@ -64,7 +74,8 @@ my $result = $nndb->prepare("select e.ExchName, nr.ExchID, InputOffset, DayofMon
 				where 
 				 nr.Date = '$dbdate' and
 				 r.regcodetypeid = 1
-				 $search");
+				 $search
+				 order by $sort_sql");
 $result->execute();
 
 $dbdate =~ m/(\d{4})(\d\d)(\d\d)/;
@@ -78,8 +89,9 @@ print "<html>
 <link rel='stylesheet' type='text/css' href='styles.css' />
 </head>
 <body>
-	
-	<table cellspacing='0' id='fixedheader'>
+	<form method='GET'>
+	<input type='hidden' name='date' value='$dbdate' />
+	<table cellspacing='0' width='100%'>
 		<thead>
 		<tr>
 			<th colspan='12' ><h2>Forecasts for $printdate</h2></th>
@@ -87,9 +99,8 @@ print "<html>
 		<tr>
 			<th colspan='2'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
 			<th colspan='7'>
-				<form method='GET'>
-				<input type='submit' value='search' /> 
-				<input type='button' value='reset' onclick='parent.location=\"?\"'/>
+				<input type='submit' value='search'/> 
+				<input type='reset' value='reset' onclick='parent.location=\"?\"'/>
 				<input type='text' name='date' value='$pretty_date' />
 				<input type='text' name='search' value='$opt_s'/>
 				<select name='search_type'>
@@ -97,25 +108,26 @@ print "<html>
 					<option value='country' $country_selected >Country</option>
 				</select>
 				|
-				<input type='checkbox' name='show_late' onclick='this.form.submit();' value='true' $late_checked/> Show Late
-				<input type='hidden' name='date' value='$dbdate' />
-				</form>
+				<input type='checkbox' name='show_late' value='true' $late_checked/> Show Late
+				
+				
 			</th>
 			<th colspan='3'>($nextdate) next <a href='?date=$nextdate'>>></a></th>
 		</tr>
-		<tr >
-			<th>Exchange Name</th>
-			<th>Country</th>
-			<th>Exchange ID</th>
-			<th>Previous Time</th>
-			<th>Input DOM</th>
-			<th>Input DOW</th>
-			<th>Input Volume</th>
-			<th>Forecasted Time</th>
-			<th>Output Volume</th>
-			<th>Recv'd Volume</th>
-			<th>Recv DateTime</th>
+		<tr>
+			<th><input type='submit' class='$colsort[0]' name='sort' value='Exchange Name' /></th>
+			<th><input type='submit' class='$colsort[1]' name='sort' value='Country' /></th>
+			<th><input type='submit' class='$colsort[2]' name='sort' value='Exchange ID' /></th>
+			<th><input type='submit' class='$colsort[3]' name='sort' value='Previous Time' /></th>
+			<th><input type='submit' class='$colsort[4]' name='sort' value='Input DOM' /></th>
+			<th><input type='submit' class='$colsort[5]' name='sort' value='Input DOW' /></th>
+			<th><input type='submit' class='$colsort[6]' name='sort' value='Input Volume' /></th>
+			<th><input type='submit' class='$colsort[7]' name='sort' value='Forecasted Time' /></th>
+			<th><input type='submit' class='$colsort[8]' name='sort' value='Output Volume' /></th>
+			<th><input type='submit' class='$colsort[9]' name='sort' value='Recvd Volume' /></th>
+			<th><input type='submit' class='$colsort[10]' name='sort' value='Recvd DateTime' /></th>
 			<th>Graph</th>
+			
 		</tr>
 		</thead>
 		<tbody>";
@@ -198,7 +210,7 @@ foreach my $row (@rows) {
 print '
 	</tbody>
 	</table>
-
+	</form>
 </body>
 </html>';
 
@@ -253,4 +265,33 @@ sub calcTime {
 	my $minutes = $offset - ($hours * 60);
 	
 	return sprintf("%s %u:%02u",$day,$hours,$minutes);
+}
+
+sub get_sort_sql {
+	my ($sort_by) = @_;
+	
+	my %col_hash = (
+		'Exchange Name' => ['e.ExchName', 0],
+		'Country' => ['r.name_', 1],
+		'Exchange ID' => ['nr.ExchID',2],
+		'Previous Time' => ['InputOffset',3],
+		'Input DOM' => ['DayofMonth',4],
+		'Input DOW' => ['DayofWeek',5],
+		'Input Volume' => ['InputVolume',6],
+		'Forecasted Time' => ['OutputOffset', 7],
+		'Output Volume' => ['OutputVolume',8],
+		'Recvd Volume' => ['CurrentVolume',9],
+		'Recvd DateTime' => ['dl.InsDateTime',10],
+	);
+	
+	# default to country if not set
+	if (!$sort_by) {
+		$sort_by = 'Country';
+	} 
+	
+	# lookup sort_by table name
+	my ($sql, $col) = @{$col_hash{$sort_by}};
+	
+	# return sort sql
+	return ($sql . ' ASC', $col);	
 }
