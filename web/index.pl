@@ -25,7 +25,6 @@ my $dbdate = FeedForecast::calc_date();
 if ($opt_d && $opt_d =~ m/^\d{8}$/) {
 	$dbdate = $opt_d;
 }
-print $opt_d;
 # display only recv'd and late
 my $late_checked = '';
 if ($opt_l) {
@@ -240,7 +239,7 @@ sub compareTimes {
 	$otime = "$date $1";
 	
 	my $forecasted = ParseDate($otime);
-	$forecasted = DateCalc($forecasted, 'in 30 minutes');
+	$forecasted = DateCalc($forecasted, 'in ' . $config->show_late() . ' minutes');
 	my $recvd = ParseDate($insert_dt);
 	
 	return Date_Cmp($forecasted, $recvd);

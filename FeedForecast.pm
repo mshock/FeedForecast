@@ -139,6 +139,8 @@ sub loadConfig {
 	# number of processes to fork while doing daily network run
 	$config->set('runnet_procs', 5);
 	$config->set('runnet_dryrun', 0);
+	# number of minutes before showing as late on webapp
+	$config->set('show_late', 45);
 	
 	# load config file (override with CLI args)
 	$config->file($config->conf_file());

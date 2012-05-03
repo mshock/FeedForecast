@@ -25,7 +25,7 @@ sub handle_request {
 	write_log($cgi->remote_addr, $cgi->request_uri);
 	
 	# static serve web directory for css, charts (later, ajax)
-	if ($cgi->path_info =~ m/\.(css|xls|js)/) {
+	if ($cgi->path_info =~ m/\.(css|xls|js|ico)/) {
 		$self->serve_static($cgi, './web');
 		return;
 	}
