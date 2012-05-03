@@ -85,6 +85,14 @@ sub loadConfig {
 		$config->nndb_user(),
 		$config->nndb_pass()));
 	
+	# Maximus info
+	$config->set('maximus_database', 'qai_master');
+	$config->set('maximus_connection', sprintf("dbi:ODBC:Driver={SQL Server};Database=%s;Server=%s;UID=%s;PWD=%s",
+		$config->maximus_database(),
+		$config->maximus_server(),
+		$config->maximus_user(),
+		$config->maximus_pass()));
+	
 	# exchange log location (for calc_metrics)
 	$config->set('exchange_log', 'logs/exchanges.log');
 	# directory to save current run logs for exchanges to
