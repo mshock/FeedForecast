@@ -93,7 +93,7 @@ print "<html>
 	<table cellspacing='0' width='100%'>
 		<thead>
 		<tr>
-			<th colspan='12' ><h2>Forecasts for $printdate</h2></th>
+			<th colspan='12' ><h2>Market Date $printdate</h2></th>
 		</tr>
 		<tr>
 			<th colspan='2'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
@@ -117,14 +117,14 @@ print "<html>
 			<th><input type='submit' class='$colsort[0]' name='sort' value='Exchange Name' /></th>
 			<th><input type='submit' class='$colsort[1]' name='sort' value='Country' /></th>
 			<th><input type='submit' class='$colsort[2]' name='sort' value='Exchange ID' /></th>
-			<th><input type='submit' class='$colsort[3]' name='sort' value='Previous Time' /></th>
-			<th><input type='submit' class='$colsort[4]' name='sort' value='Input DOM' /></th>
-			<th><input type='submit' class='$colsort[5]' name='sort' value='Input DOW' /></th>
-			<th><input type='submit' class='$colsort[6]' name='sort' value='Input Volume' /></th>
-			<th><input type='submit' class='$colsort[7]' name='sort' value='Forecasted Time' /></th>
-			<th><input type='submit' class='$colsort[8]' name='sort' value='Output Volume' /></th>
-			<th><input type='submit' class='$colsort[9]' name='sort' value='Recvd Volume' /></th>
-			<th><input type='submit' class='$colsort[10]' name='sort' value='Recvd DateTime' /></th>
+			<th><input type='submit' class='$colsort[3]' name='sort' value='Last Day Recvd' /></th>
+			<th><input type='submit' class='$colsort[4]' name='sort' value='Last DoM' /></th>
+			<th><input type='submit' class='$colsort[5]' name='sort' value='Last DoW' /></th>
+			<th><input type='submit' class='$colsort[6]' name='sort' value='Last Volume' /></th>
+			<th><input type='submit' class='$colsort[7]' name='sort' value='ETA' /></th>
+			<th><input type='submit' class='$colsort[8]' name='sort' value='Expected Volume' /></th>
+			<th><input type='submit' class='$colsort[9]' name='sort' value='Actual Volume' /></th>
+			<th><input type='submit' class='$colsort[10]' name='sort' value='Time Recvd' /></th>
 			<th>Graph</th>
 			
 		</tr>
@@ -273,14 +273,14 @@ sub get_sort_sql {
 		'Exchange Name' => ['e.ExchName', 0],
 		'Country' => ['r.name_', 1],
 		'Exchange ID' => ['nr.ExchID',2],
-		'Previous Time' => ['InputOffset',3],
-		'Input DOM' => ['DayofMonth',4],
-		'Input DOW' => ['DayofWeek',5],
-		'Input Volume' => ['InputVolume',6],
-		'Forecasted Time' => ['OutputOffset', 7],
-		'Output Volume' => ['OutputVolume',8],
-		'Recvd Volume' => ['CurrentVolume',9],
-		'Recvd DateTime' => ['dl.InsDateTime',10],
+		'Last Day Recvd' => ['InputOffset',3],
+		'Last DoM' => ['DayofMonth',4],
+		'Last DoW' => ['DayofWeek',5],
+		'Last Volume' => ['InputVolume',6],
+		'ETA' => ['OutputOffset', 7],
+		'Expected Volume' => ['OutputVolume',8],
+		'Actual Volume' => ['CurrentVolume',9],
+		'Time Recvd' => ['dl.InsDateTime',10],
 	);
 	
 	# default to country if not set
