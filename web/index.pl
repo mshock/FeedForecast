@@ -109,6 +109,7 @@ print "<html>
 				</select>
 				|
 				<input type='checkbox' name='show_late' value='true' $late_checked/> Show Late
+				<input type='button' value='Export' onClick=\"window.location.href='charts/report_$dbdate.xls'\" />
 				
 				
 			</th>
