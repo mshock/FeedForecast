@@ -8,8 +8,9 @@ package FeedForecast;
 use strict;
 use AppConfig qw(:argcount);
 use Date::Calc qw(Add_Delta_Days Day_of_Week);
+use Net::SMTP;
 
-return 1;
+1;
 
 
 # load config variables for implementers
@@ -149,7 +150,8 @@ sub loadConfig {
 	$config->set('runnet_dryrun', 0);
 	# number of minutes before showing as late on webapp
 	$config->set('show_late', 45);
-	
+	$config->set('smtp_server', 'mailhub.tfn.com');
+		
 	# load config file (override with CLI args)
 	$config->file($config->conf_file());
 	
@@ -232,4 +234,61 @@ sub calcTime {
 sub currtime {
 	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = gmtime(time);
 	return sprintf("%02u/%02u/%u %02u:%02u:%02u", $mon + 1, $mday, $year + 1900, $hour, $min, $sec);
+}
+
+sub load_addresses {
+	open(ADDS, '<', 'email_list.txt');
+	my @addresses;
+	while (<ADDS>) {
+		chomp;
+		push @addresses, $_ if !/#/;
+	}
+	close ADDS;
+	return @addresses;
+}
+
+sub send_email {
+	my $contentFileName_l = shift;
+	my $subjectLine_l = shift;
+	my $msgType_l = shift;
+	
+	my $smtpServer_l = shift;
+	
+	
+	my $smtp = Net::SMTP->new($smtpServer_l);
+	#my $smtp = Net::SMTP->new('qai-chi-mon01.qai.qaisoftware.com');
+	
+	$smtp->mail($ENV{USER});
+	
+	my @addList = load_addresses();
+	foreach my $add (@addList)
+	{
+		$smtp->to($add);	
+	} 
+	
+	$smtp->data();
+	foreach my $add (@addList)
+	{
+		$smtp->datasend("To: $add\n");
+	} 
+	
+	$smtp->datasend("From: DS_Monitor\n");
+	$smtp->datasend("Subject: $subjectLine_l\n");
+	$smtp->datasend("\n");
+	
+	if($msgType_l == 0) # use File
+	{
+		open(HANDLE, '<', $contentFileName_l);
+		while ( <HANDLE> )
+		{
+			$smtp->datasend("$_");
+		}
+		close HANDLE;
+	} elsif ($msgType_l == 1) # use Content File Name as MSG to send
+	{
+		$smtp->datasend("$contentFileName_l");
+	}
+	$smtp->dataend();
+
+	$smtp->quit;
 }

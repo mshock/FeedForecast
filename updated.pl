@@ -145,6 +145,9 @@ sub make_pass {
 	}
 		
 	# clear and write new weblog file
+	my %prevhash = load_log($date);
+	my $email_body = '';
+	
 	open (OLOG, '>', sprintf($daemon_log,$date));
 	foreach my $exchange (sort (keys %exchhash)) {
 		 my ($name, $to, $dom, $dow, $vol, $to2, $vol2, $count, $state) = 
@@ -161,6 +164,12 @@ sub make_pass {
 		# check if this exchange even exists (some returned by query do not)
 		if (!$name) {
 			next;
+		}
+		
+		# check if this exchange is just now being marked late
+		# add it to the email body if it is
+		if (!%prevhash || ($prevhash{$exchange}{state} eq 'wait' && $state eq 'late')) {
+			$email_body .= "$name [$exchange]\n";
 		}
 		
 		my $hashdump = join(',',($name, $exchange, $to, $dom, $dow, $vol, $to2, $vol2, $count, $state));
@@ -194,8 +203,37 @@ sub make_pass {
 	$ds2->disconnect();
 	$nndb->disconnect();
 	
+	# email notification with late feeds if there is a new late feed
+	if ($email_body) {
+		$email_body = "The following exchange(s) have been marked as late:\n$email_body";
+		my $subject_line = '';
+		FeedForecast::send_email($email_body,$subject_line,1,$config->smtp_server());
+	}
+	
 	# create new Excel sheet
 	system("perl generate_report.pl $date") == 0 or warn "could not create spreadsheet: $!\n";
+}
+
+# load the previous exchange log into a hash
+sub load_log {
+	my $date = shift;
+	open (LOG, '<', sprintf($daemon_log,$date)) or return ();
+	my %exchhash = ();
+	while (<LOG>) {
+		chomp;
+		my @line = split ',';
+						($exchhash{$line[1]}{name},
+						$exchhash{$line[1]}{to},
+						$exchhash{$line[1]}{dom},
+						$exchhash{$line[1]}{dow},
+						$exchhash{$line[1]}{vol},
+						$exchhash{$line[1]}{to2},
+						$exchhash{$line[1]}{vol2},
+						$exchhash{$line[1]}{count},
+						$exchhash{$line[1]}{state}) = @line[0,2..9];
+	}
+	close LOG;
+	return %exchhash;
 }
 
 sub server_time_offset {
