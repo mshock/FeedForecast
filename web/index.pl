@@ -9,9 +9,9 @@ use URI::Escape;
 use Date::Manip qw(ParseDate Date_Cmp DateCalc);
 use FeedForecast;
 
-use vars qw($opt_d $opt_l $opt_s $opt_t $opt_o);
+use vars qw($opt_d $opt_l $opt_s $opt_t $opt_o $opt_i);
 
-getopts('d:ls:t:o:');
+getopts('d:ls:t:o:i');
 
 my $config = FeedForecast::loadConfig();
 
@@ -26,10 +26,9 @@ if ($opt_d && $opt_d =~ m/^\d{8}$/) {
 	$dbdate = $opt_d;
 }
 # display only recv'd and late
-my $late_checked = '';
-if ($opt_l) {
-	$late_checked = 'checked=true';
-}
+my $late_checked = $opt_l ? 'checked=true' : '';
+# display only incomplete
+my $inc_checked = $opt_i ? 'checked=true' : '';
 
 # search params
 my $search = '';
@@ -109,6 +108,7 @@ print "<html>
 				</select>
 				|
 				<input type='checkbox' name='show_late' value='true' $late_checked/> Show Late
+				<input type='checkbox' name='show_incomplete' value='true' $inc_checked/> Show Incomplete
 				<input type='button' value='Export' onClick=\"window.location.href='charts/report_$dbdate.xls'\" />
 				
 				
@@ -166,6 +166,10 @@ foreach my $row (@rows) {
 	# if showing late compare times to find late 
 	if ($opt_l && $state eq 'recv') {
 		next if (compareTimes($otime, $insdt) != -1);
+	}
+	# if showing incomplete, hide recv'd
+	elsif ($opt_i && $state eq 'recv') {
+		next;
 	}
 	
 	if ($even_odd++ % 2) {

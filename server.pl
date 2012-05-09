@@ -35,11 +35,12 @@ sub handle_request {
 	# get all request params, create switches for calling index.pl
 	my $date = $cgi->param('date') ? '-d ' . parse_date($cgi->param('date')) : '';
 	my $show_late = $cgi->param('show_late') ? '-l' : '';
+	my $show_inc = $cgi->param('show_incomplete') ? '-i' : '';
 	my $search = $cgi->param('search') ? sprintf("-s \"%s\"",$cgi->param('search')) : '';
 	my $search_type = $cgi->param('search_type') ? '-t ' . $cgi->param('search_type') : '';
 	my $sort = $cgi->param('sort') ? sprintf("-o \"%s\"" , $cgi->param('sort')) : '';
 
-	my $args = "$date $search_type $search $show_late $sort";
+	my $args = "$date $search_type $search $show_late $sort $show_inc";
 	
 	print "HTTP/1.0 200 OK\r\n";
 	print "Content-type: text/html\n\n";
