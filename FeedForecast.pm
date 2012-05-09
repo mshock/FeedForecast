@@ -207,6 +207,26 @@ sub wout {
 	wlog($level, $line);
 }
 
+# function to calculate time of day from minute offset
+sub calcTime {
+	my ($offset) = @_; 
+	my $day = "prev";
+	if ($offset >= 2880) {
+		$offset -= 2880;
+		$day = "next";
+	}
+	elsif ($offset >= 1440) {
+		$offset -= 1440;
+		$day = "curr";
+	}
+	my $hours = int($offset / 60);
+	if ($hours > 24 || $hours < 0) {
+		return "error";	
+	}
+	my $minutes = $offset - ($hours * 60);
+	
+	return sprintf("%s %u:%02u",$day,$hours,$minutes);
+}
 
 # calculate and format a SQL-usable datetime string
 sub currtime {

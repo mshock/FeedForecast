@@ -54,7 +54,6 @@ do {
 	}
 	
 	print FeedForecast::currtime() . "\tfinished update task\n";
-
 } while (!$runonce);
 
 # make a daemon pass for given date
@@ -195,6 +194,8 @@ sub make_pass {
 	$ds2->disconnect();
 	$nndb->disconnect();
 	
+	# create new Excel sheet
+	system("perl generate_report.pl $date") == 0 or warn "could not create spreadsheet: $!\n";
 }
 
 sub server_time_offset {

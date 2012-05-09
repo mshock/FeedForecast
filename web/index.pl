@@ -82,6 +82,7 @@ my $pretty_date = sprintf("%u/%u/%u", $2, $3, $1);
 my $nextdate = FeedForecast::increment_day("$1-$2-$3");
 my ($prevdate, $trash1, $trash2) = FeedForecast::decrement_day($dbdate);
 
+
 print "<html>
 <head>
 <meta http-equiv='refresh' content='300' > 
@@ -93,7 +94,7 @@ print "<html>
 	<table cellspacing='0' width='100%'>
 		<thead>
 		<tr>
-			<th colspan='12' ><h2>Market Date $printdate</h2></th>
+			<th colspan='12' ><h2>Market Date $printdate GMT</h2></th>
 		</tr>
 		<tr>
 			<th colspan='2'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
@@ -159,7 +160,7 @@ my $eo = '';
 foreach my $row (@rows) {
 	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt, $country) = @{$row};
 	
-	my $otime = calcTime($ooffset);
+	my $otime = FeedForecast::calcTime($ooffset);
 	
 	# if showing late compare times to find late 
 	if ($opt_l && $state eq 'recv') {
@@ -173,7 +174,7 @@ foreach my $row (@rows) {
 		$eo = 'even';
 	}
 	
-	my $itime = calcTime($ioffset);
+	my $itime = FeedForecast::calcTime($ioffset);
 	
 	$insdt =~ s/:\d\d\..*//;
 	$insdt =~ s/0(\d:)/$1/;
@@ -243,27 +244,6 @@ sub compareTimes {
 	my $recvd = ParseDate($insert_dt);
 	
 	return Date_Cmp($forecasted, $recvd);
-}
-
-# function to calculate time of day from minute offset
-sub calcTime {
-	my ($offset) = @_; 
-	my $day = "prev";
-	if ($offset >= 2880) {
-		$offset -= 2880;
-		$day = "next";
-	}
-	elsif ($offset >= 1440) {
-		$offset -= 1440;
-		$day = "curr";
-	}
-	my $hours = int($offset / 60);
-	if ($hours > 24 || $hours < 0) {
-		return "error";	
-	}
-	my $minutes = $offset - ($hours * 60);
-	
-	return sprintf("%s %u:%02u",$day,$hours,$minutes);
 }
 
 sub get_sort_sql {
