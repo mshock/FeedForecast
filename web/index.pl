@@ -126,7 +126,7 @@ print "<html>
 			<th><input type='submit' class='$colsort[8]' name='sort' value='Expected Volume' $header_hover /></th>
 			<th><input type='submit' class='$colsort[9]' name='sort' value='Actual Volume' $header_hover /></th>
 			<th><input type='submit' class='$colsort[10]' name='sort' value='Time Recvd' $header_hover /></th>
-			<th>Graph</th>
+			<th><input type='submit' class='headerunsort' value='Graph' title='Download History Graph' /></th>
 			
 		</tr>
 		</thead>
@@ -206,18 +206,18 @@ foreach my $row (@rows) {
 	my $row_class = $state . '_' . $eo;
 	
 	print "<tr class='$row_class' $holiday>
-	<td>$name</td>
-	<td>$country</td>
-	<td>$id</td>
-	<td>$itime ($ioffset)</td>
-	<td>$ivol</td>
-	<td>$otime ($ooffset)</td>
-	<td>$ovol</td>
-	<td>$count</td>
-	<td>$insdt</td>
+	<td ><span title='Exchange Name'>$name</span></td>
+	<td ><span title='Country/Region'>$country</span></td>
+	<td ><span title='Exchange ID'>$id</span></td>
+	<td ><span title='Last Day Recvd'>$itime ($ioffset)</span></td>
+	<td ><span title='Last Volume'>$ivol</span></td>
+	<td ><span title='ETA'>$otime ($ooffset)</span></td>
+	<td ><span title='Expected Volume'>$ovol</span></td>
+	<td ><span title='Actual Volume'>$count</span></td>
+	<td ><span title='Time Recvd'>$insdt</span></td>
 	<td>
 			<form>
-			<input type='button' value='Download' onClick=\"window.location.href='charts/$name-$id.xls'\" />
+			<input type='button' value='Download' onClick=\"window.location.href='charts/$name-$id.xls'\" title='Download History Graph' />
 			</form>
 		</td>	
 	</tr>";
