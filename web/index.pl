@@ -81,6 +81,7 @@ my $pretty_date = sprintf("%u/%u/%u", $2, $3, $1);
 my $nextdate = FeedForecast::increment_day("$1-$2-$3");
 my ($prevdate, $trash1, $trash2) = FeedForecast::decrement_day($dbdate);
 
+my $header_hover = 'title=\'click to sort\'';
 
 print "<html>
 <head>
@@ -101,7 +102,7 @@ print "<html>
 				<input type='submit' value='search'/> 
 				<input type='reset' value='reset' onclick='parent.location=\"?\"'/>
 				<input type='text' name='date' value='$pretty_date' />
-				<input type='text' name='search' value='$opt_s'/>
+				<input type='text' name='search' value='$opt_s' title='Search'/>
 				<select name='search_type'>
 					<option value='exchange' $exch_selected >Exchange</option>
 					<option value='country' $country_selected >Country</option>
@@ -116,15 +117,15 @@ print "<html>
 			<th colspan='3'>($nextdate) next <a href='?date=$nextdate'>>></a></th>
 		</tr>
 		<tr>
-			<th><input type='submit' class='$colsort[0]' name='sort' value='Exchange Name' /></th>
-			<th><input type='submit' class='$colsort[1]' name='sort' value='Country' /></th>
-			<th><input type='submit' class='$colsort[2]' name='sort' value='Exchange ID' /></th>
-			<th><input type='submit' class='$colsort[3]' name='sort' value='Last Day Recvd' /></th>
-			<th><input type='submit' class='$colsort[6]' name='sort' value='Last Volume' /></th>
-			<th><input type='submit' class='$colsort[7]' name='sort' value='ETA' /></th>
-			<th><input type='submit' class='$colsort[8]' name='sort' value='Expected Volume' /></th>
-			<th><input type='submit' class='$colsort[9]' name='sort' value='Actual Volume' /></th>
-			<th><input type='submit' class='$colsort[10]' name='sort' value='Time Recvd' /></th>
+			<th><input type='submit' class='$colsort[0]' name='sort' value='Exchange Name' $header_hover /></th>
+			<th><input type='submit' class='$colsort[1]' name='sort' value='Country' $header_hover /></th>
+			<th><input type='submit' class='$colsort[2]' name='sort' value='Exchange ID' $header_hover /></th>
+			<th><input type='submit' class='$colsort[3]' name='sort' value='Last Day Recvd' $header_hover /></th>
+			<th><input type='submit' class='$colsort[6]' name='sort' value='Last Volume' $header_hover /></th>
+			<th><input type='submit' class='$colsort[7]' name='sort' value='ETA' $header_hover /></th>
+			<th><input type='submit' class='$colsort[8]' name='sort' value='Expected Volume' $header_hover /></th>
+			<th><input type='submit' class='$colsort[9]' name='sort' value='Actual Volume' $header_hover /></th>
+			<th><input type='submit' class='$colsort[10]' name='sort' value='Time Recvd' $header_hover /></th>
 			<th>Graph</th>
 			
 		</tr>

@@ -1,0 +1,13 @@
+#############################################################################
+# Feed Forecast																#
+#																			#
+#	An automated, dynamic neural network application for data validation.	#
+#																			#
+#############################################################################
+
+TODO:
+	- DS Build #
+	- AUD counts
+	- Multiple tz support for frontend
+	- File date and file #
+	- Backend support of Holidays
