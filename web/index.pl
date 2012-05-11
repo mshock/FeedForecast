@@ -133,13 +133,22 @@ print "<html>
 		</thead>
 		<tbody>";
 
-# loop over exchange array and print to table
+# get all the holidays for today
+$pretty_date =~ /(\d+).(\d+).(\d+)/;
+my %holidays = FeedForecast::get_holidays(sprintf("%u-%02u-%02u",$3,$1,$2));
 
+# loop over exchange array and print to table
 my (@error,@late,@wait,@recv);
 while(my @row = $result->fetchrow_array()) {
 
-	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt) = @row;
-
+	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt, $country) = @row;
+	
+	# check if this exchange is on holiday
+	if (exists $holidays{lc $country} && !($state eq 'recv')) {
+		push(@error,[@row]);
+		next;
+	}
+	
 	if ($state eq "recv") {
 		push(@recv,[@row]);
 	}
@@ -149,13 +158,10 @@ while(my @row = $result->fetchrow_array()) {
 	elsif ($state eq "wait") {
 		push(@wait,[@row]);
 	}
-	else {
-		push(@error,[@row]);
-	}
 }
 
 # only get the recv'd rows if we're showing recv'd but late (checkbox)
-my @rows = $opt_l ? (@late, @recv) : (@error, @late, @wait, @recv);
+my @rows = $opt_l ? (@late, @recv) : (@late, @wait, @recv, @error);
 my $even_odd = 0;
 my $eo = '';
 foreach my $row (@rows) {
@@ -168,7 +174,7 @@ foreach my $row (@rows) {
 		next if (compareTimes($otime, $insdt) != -1);
 	}
 	# if showing incomplete, hide recv'd
-	elsif ($opt_i && $state eq 'recv') {
+	elsif ($opt_i && ($state eq 'recv' || $state eq 'error')) {
 		next;
 	}
 	
@@ -189,10 +195,18 @@ foreach my $row (@rows) {
 	if (!($state eq 'recv')) {
 		$insdt = '---';
 	}
+	
+	my $holiday = '';
+	if (exists $holidays{lc $country}) {
+		my ($hol_name, $hol_type) = @{$holidays{lc $country}};
+		$holiday = "title=\"Holiday Name: $hol_name\nHoliday Type: $hol_type\"";
+		$state = 'error';
+	}
+	
 	# set background accordingly
 	my $row_class = $state . '_' . $eo;
 	
-	print "<tr class='$row_class'>
+	print "<tr class='$row_class' $holiday>
 	<td>$name</td>
 	<td>$country</td>
 	<td>$id</td>

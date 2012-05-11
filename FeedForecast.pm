@@ -11,10 +11,7 @@ use Date::Calc qw(Add_Delta_Days Day_of_Week);
 use Net::SMTP;
 use DBI;
 
-
-
 1;
-
 
 # load config variables for implementers
 sub loadConfig {
@@ -324,7 +321,7 @@ sub get_holidays {
 	my %holhash = ();
 	while (my @row = $get_holidays->fetchrow_array()) {
 		my ($country,$holtype,$holname) = @row;
-		push @{$holhash{$country}}, ($holname, $holtype);  
+		push @{$holhash{lc $country}}, ($holname, $holtype);  
 	}
 	
 	$get_holidays->finish();

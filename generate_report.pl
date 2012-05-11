@@ -21,6 +21,7 @@ my $worksheet = $workbook->add_worksheet();
 my $form_late = $workbook->add_format(bg_color => 'red');
 my $form_wait = $workbook->add_format(bg_color => 'yellow');
 my $form_recv = $workbook->add_format(bg_color => 'green');
+my $form_holi = $workbook->add_format(bg_color => 'blue');
 my $head_color = $workbook->set_custom_color(42, '#DBD7D5');
 my $form_head = $workbook->add_format(bg_color => $head_color);
 
@@ -62,8 +63,12 @@ while(@chartdata = $result->fetchrow_array()) {
 	# calculate actual times from offsets
 	$chartdata[3] = FeedForecast::calcTime($chartdata[3]);
 	$chartdata[7] = FeedForecast::calcTime($chartdata[7]);
+	
 	# set background color according to state
-	if ($chartdata[11] eq 'late') {
+	if () {
+		
+	}
+	elsif ($chartdata[11] eq 'late') {
 		$bg_color = $form_late;
 	}
 	elsif ($chartdata[11] eq 'recv') {
