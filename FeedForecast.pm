@@ -9,6 +9,9 @@ use strict;
 use AppConfig qw(:argcount);
 use Date::Calc qw(Add_Delta_Days Day_of_Week);
 use Net::SMTP;
+use DBI;
+
+
 
 1;
 
@@ -86,13 +89,13 @@ sub loadConfig {
 		$config->nndb_user(),
 		$config->nndb_pass()));
 	
-	# Maximus info
-	$config->set('maximus_database', 'qai_master');
-	$config->set('maximus_connection', sprintf("dbi:ODBC:Driver={SQL Server};Database=%s;Server=%s;UID=%s;PWD=%s",
-		$config->maximus_database(),
-		$config->maximus_server(),
-		$config->maximus_user(),
-		$config->maximus_pass()));
+	# QADMASTER info
+	$config->set('qadm_database', 'qai_master');
+	$config->set('qadm_connection', sprintf("dbi:ODBC:Driver={SQL Server};Database=%s;Server=%s;UID=%s;PWD=%s",
+		$config->qadm_database(),
+		$config->qadm_server(),
+		$config->qadm_user(),
+		$config->qadm_pass()));
 	
 	# exchange log location (for calc_metrics)
 	$config->set('exchange_log', 'logs/exchanges.log');
@@ -291,4 +294,41 @@ sub send_email {
 	$smtp->dataend();
 
 	$smtp->quit;
+}
+
+# return a hash of all holidays for a date
+# hash will be indexed by country
+# %hash{country} = (holiday_name,holiday_type)
+#my %h = get_holidays('2012-05-11');
+#for (keys %h) {
+#	my @hol = @{$h{$_}};
+#	print $hol[0].' '.$hol[1]. "\n";
+#}
+sub get_holidays {
+	my ($date) = @_;
+	my $config = loadConfig();
+	my $qadm = DBI->connect($config->qadm_connection());
+	my $get_holidays = $qadm->prepare(
+		"SELECT CntryName, sde.HolType, sdi.Name
+		FROM [qai_master].[dbo].[SDExchInfo_v] sde,
+		[qai_master].[dbo].[SDDates_v] sdd,
+		[qai_master].[dbo].[SDInfo_v] sdi
+		where 
+		sde.ExchCode = sdd.ExchCode and
+		sdi.Code = sdd.Code and 
+		sdd.Date_ = ? and
+		sde.ExchCode != 0"		
+	);
+	
+	$get_holidays->execute($date);
+	my %holhash = ();
+	while (my @row = $get_holidays->fetchrow_array()) {
+		my ($country,$holtype,$holname) = @row;
+		push @{$holhash{$country}}, ($holname, $holtype);  
+	}
+	
+	$get_holidays->finish();
+	$qadm->disconnect();
+	
+	return %holhash;
 }
