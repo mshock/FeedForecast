@@ -55,6 +55,10 @@ my @chartdata = ('Exchange Name',
 );
 $worksheet->write('A1', \@chartdata, $form_head);
 
+# get holidays
+$dbdate =~ /(\d{4})(\d\d)(\d\d)/;
+my %holidays = FeedForecast::get_holidays("$1-$2-$3");
+
 # write all rows in query to spreadsheet
 $result->execute();
 my $row_num = 1;
@@ -65,8 +69,8 @@ while(@chartdata = $result->fetchrow_array()) {
 	$chartdata[7] = FeedForecast::calcTime($chartdata[7]);
 	
 	# set background color according to state
-	if () {
-		
+	if (exists $holidays{lc $chartdata[1]}) {
+		$bg_color = $form_holi;
 	}
 	elsif ($chartdata[11] eq 'late') {
 		$bg_color = $form_late;
