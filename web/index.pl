@@ -120,8 +120,6 @@ print "<html>
 			<th><input type='submit' class='$colsort[1]' name='sort' value='Country' /></th>
 			<th><input type='submit' class='$colsort[2]' name='sort' value='Exchange ID' /></th>
 			<th><input type='submit' class='$colsort[3]' name='sort' value='Last Day Recvd' /></th>
-			<th><input type='submit' class='$colsort[4]' name='sort' value='Last DoM' /></th>
-			<th><input type='submit' class='$colsort[5]' name='sort' value='Last DoW' /></th>
 			<th><input type='submit' class='$colsort[6]' name='sort' value='Last Volume' /></th>
 			<th><input type='submit' class='$colsort[7]' name='sort' value='ETA' /></th>
 			<th><input type='submit' class='$colsort[8]' name='sort' value='Expected Volume' /></th>
@@ -211,8 +209,6 @@ foreach my $row (@rows) {
 	<td>$country</td>
 	<td>$id</td>
 	<td>$itime ($ioffset)</td>
-	<td>$dom</td>
-	<td>$dow</td>
 	<td>$ivol</td>
 	<td>$otime ($ooffset)</td>
 	<td>$ovol</td>
