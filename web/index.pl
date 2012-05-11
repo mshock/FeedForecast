@@ -97,7 +97,7 @@ print "<html>
 		</tr>
 		<tr>
 			<th colspan='2'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
-			<th colspan='7'>
+			<th colspan='5'>
 				<input type='submit' value='search'/> 
 				<input type='reset' value='reset' onclick='parent.location=\"?\"'/>
 				<input type='text' name='date' value='$pretty_date' />
@@ -106,7 +106,7 @@ print "<html>
 					<option value='exchange' $exch_selected >Exchange</option>
 					<option value='country' $country_selected >Country</option>
 				</select>
-				|
+				<br />
 				<input type='checkbox' name='show_late' value='true' $late_checked/> Show Late
 				<input type='checkbox' name='show_incomplete' value='true' $inc_checked/> Show Incomplete
 				<input type='button' value='Export' onClick=\"window.location.href='charts/report_$dbdate.xls'\" />
