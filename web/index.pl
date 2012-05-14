@@ -6,8 +6,7 @@ use strict;
 use DBI;
 use Getopt::Std;
 use URI::Escape;
-use Date::Manip qw(ParseDate Date_Cmp DateCalc UnixDate);
-use Date::Manip::Date qw(Convert);
+use Date::Manip qw(ParseDate Date_Cmp DateCalc UnixDate Date_ConvTZ);
 use FeedForecast;
 
 use vars qw($opt_d $opt_l $opt_s $opt_t $opt_o $opt_i $opt_z);
@@ -243,11 +242,15 @@ foreach my $row (@rows) {
 	if (!($state eq 'recv')) {
 		$insdt = '---';
 	}
-	#elsif ($timezone ne 'GMT') {
-#		my $parsed_date = ParseDate($otime);
-#		Convert($parsed_date, [$timezone]);
-#		$insdt = UnixDate($parsed_date, "%Y-%m-%d %h:%m");
-#	}
+	elsif ($timezone ne 'GMT') {
+		my $tz;
+		$tz = 'America/Chicago' if $timezone eq 'CST';
+		$tz = 'Indian/Cocos' if $timezone eq 'IST';
+		
+		my $parsed_date = ParseDate($insdt);
+		$parsed_date = Date_ConvTZ($parsed_date, 'UTC', $tz);
+		$insdt = UnixDate($parsed_date, "%Y-%m-%d %H:%M");
+	}
 	
 	
 	# add dates for curr/next/prev
@@ -279,7 +282,7 @@ foreach my $row (@rows) {
 	<td ><span title='ETA ($timezone)'>$otime</span></td>
 	<td ><span title='Expected Volume'>$ovol</span></td>
 	<td ><span title='Actual Volume'>$count</span></td>
-	<td ><span title='Time Recvd (GMT)'>$insdt</span></td>
+	<td ><span title='Time Recvd ($timezone)'>$insdt</span></td>
 	<td >
 			<form>
 			<input type='button' value='Download' onClick=\"window.location.href='charts/$name-$id.xls'\" title='Download History Graph' />
