@@ -98,7 +98,7 @@ if ($dbdate == FeedForecast::calc_date()) {
 
 $headertime .= $header_control;
 
-my $result = $nndb->prepare("select e.ExchName, nr.ExchID, InputOffset, DayofMonth, DayofWeek, InputVolume, OutputOffset, OutputVolume, CurrentVolume, State, dl.InsDateTime, r.name_
+my $result = $nndb->prepare("select e.ExchName, nr.ExchID, InputOffset, DayofMonth, DayofWeek, InputVolume, OutputOffset, OutputVolume, CurrentVolume, State, dl.InsDateTime, r.name_, e.ExchCtryCode
 				from NetResults nr 
 					join DaemonLogs dl 
 						on nr.Date = dl.Date and nr.ExchID = dl.ExchID
@@ -117,12 +117,15 @@ $dbdate =~ m/(\d{4})(\d\d)(\d\d)/;
 my $pretty_date = sprintf("%u/%u/%u", $2, $3, $1);
 my $nextdate = FeedForecast::increment_day("$1-$2-$3");
 my ($prevdate, $trash1, $trash2) = FeedForecast::decrement_day($dbdate);
+my ($ndate,$pdate,$cdate) = format_daterange($nextdate,$prevdate,$dbdate);
+
 
 my $header_hover = 'title=\'click to sort\'';
 
 print "<html>
 <head>
 <meta http-equiv='refresh' content='300' > 
+<title>Monitor :: Market Date $headerdate</title>
 <link rel='stylesheet' type='text/css' href='styles.css' />
 </head>
 <body>
@@ -131,10 +134,10 @@ print "<html>
 	<table cellspacing='0' width='100%'>
 		<thead>
 		<tr>
-			<th colspan='12' ><h2>Market Date $headerdate$headertime </h2></th>
+			<th colspan='11' ><h2>Market Date $headerdate$headertime </h2></th>
 		</tr>
 		<tr>
-			<th colspan='2'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
+			<th colspan='1'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
 			<th colspan='5'>
 				<input type='submit' value='search'/> 
 				<input type='reset' value='reset' onclick='parent.location=\"?\"'/>
@@ -156,13 +159,12 @@ print "<html>
 		<tr>
 			<th><input type='submit' class='$colsort[0]' name='sort' value='Exchange Name' $header_hover /></th>
 			<th><input type='submit' class='$colsort[1]' name='sort' value='Country' $header_hover /></th>
-			<th><input type='submit' class='$colsort[2]' name='sort' value='Exchange ID' $header_hover /></th>
-			<th><input type='submit' class='$colsort[3]' name='sort' value='Last Day Recvd' $header_hover /></th>
-			<th><input type='submit' class='$colsort[6]' name='sort' value='Last Volume' $header_hover /></th>
+			<th><input type='submit' class='$colsort[3]' name='sort' value='Last Day Rec' $header_hover /></th>
+			<th><input type='submit' class='$colsort[6]' name='sort' value='Last Vol' $header_hover /></th>
 			<th><input type='submit' class='$colsort[7]' name='sort' value='ETA' $header_hover /></th>
-			<th><input type='submit' class='$colsort[8]' name='sort' value='Expected Volume' $header_hover /></th>
-			<th><input type='submit' class='$colsort[9]' name='sort' value='Actual Volume' $header_hover /></th>
-			<th><input type='submit' class='$colsort[10]' name='sort' value='Time Recvd' $header_hover /></th>
+			<th><input type='submit' class='$colsort[8]' name='sort' value='Expected Vol' $header_hover /></th>
+			<th><input type='submit' class='$colsort[9]' name='sort' value='Actual Vol' $header_hover /></th>
+			<th><input type='submit' class='$colsort[10]' name='sort' value='Time Rec' $header_hover /></th>
 			<th><input type='submit' class='headerunsort' value='Graph' title='Download History Graph' /></th>
 			
 		</tr>
@@ -177,10 +179,10 @@ my %holidays = FeedForecast::get_holidays(sprintf("%u-%02u-%02u",$3,$1,$2));
 my (@error,@late,@wait,@recv);
 while(my @row = $result->fetchrow_array()) {
 
-	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt, $country) = @row;
+	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt, $country, $ctrycode) = @row;
 	
 	# check if this exchange is on holiday
-	if (exists $holidays{lc $country} && !($state eq 'recv')) {
+	if (exists $holidays{$ctrycode} && !($state eq 'recv')) {
 		push(@error,[@row]);
 		next;
 	}
@@ -201,7 +203,7 @@ my @rows = $opt_l ? (@late, @recv) : (@late, @wait, @recv, @error);
 my $even_odd = 0;
 my $eo = '';
 foreach my $row (@rows) {
-	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt, $country) = @{$row};
+	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt, $country, $ctrycode) = @{$row};
 	
 	my $ootime = FeedForecast::calcTime($ooffset);
 	
@@ -247,9 +249,21 @@ foreach my $row (@rows) {
 #		$insdt = UnixDate($parsed_date, "%Y-%m-%d %h:%m");
 #	}
 	
+	
+	# add dates for curr/next/prev
+	$itime =~ s/curr/$cdate/;
+	$itime =~ s/next/$ndate/;
+	$itime =~ s/prev/$pdate/;
+	
+	$otime =~ s/curr/$cdate/;
+	$otime =~ s/next/$ndate/;
+	$otime =~ s/prev/$pdate/;
+	
+	
+	# add holiday hover and state
 	my $holiday = '';
-	if (exists $holidays{lc $country}) {
-		my ($hol_name, $hol_type) = @{$holidays{lc $country}};
+	if (exists $holidays{$ctrycode}) {
+		my ($hol_name, $hol_type) = @{$holidays{$ctrycode}};
 		$holiday = "title=\"Holiday Name: $hol_name\nHoliday Type: $hol_type\"";
 		$state = 'error';
 	}
@@ -258,12 +272,11 @@ foreach my $row (@rows) {
 	my $row_class = $state . '_' . $eo;
 	
 	print "<tr class='$border_class $row_class' $holiday>
-	<td ><span title='Exchange Name'>$name</span></td>
+	<td ><span title='Exchange Name'>$name [$id]</span></td>
 	<td ><span title='Country/Region'>$country</span></td>
-	<td ><span title='Exchange ID'>$id</span></td>
-	<td ><span title='Last Day Recvd ($timezone)'>$itime ($ioffset)</span></td>
+	<td ><span title='Last Day Recvd ($timezone)'>$itime</span></td>
 	<td ><span title='Last Volume'>$ivol</span></td>
-	<td ><span title='ETA ($timezone)'>$otime ($ooffset)</span></td>
+	<td ><span title='ETA ($timezone)'>$otime</span></td>
 	<td ><span title='Expected Volume'>$ovol</span></td>
 	<td ><span title='Actual Volume'>$count</span></td>
 	<td ><span title='Time Recvd (GMT)'>$insdt</span></td>
@@ -321,14 +334,14 @@ sub get_sort_sql {
 		'Exchange Name' => ['e.ExchName', 0],
 		'Country' => ['r.name_', 1],
 		'Exchange ID' => ['nr.ExchID',2],
-		'Last Day Recvd' => ['InputOffset',3],
+		'Last Day Rec' => ['InputOffset',3],
 		'Last DoM' => ['DayofMonth',4],
 		'Last DoW' => ['DayofWeek',5],
-		'Last Volume' => ['InputVolume',6],
+		'Last Vol' => ['InputVolume',6],
 		'ETA' => ['OutputOffset', 7],
-		'Expected Volume' => ['OutputVolume',8],
-		'Actual Volume' => ['CurrentVolume',9],
-		'Time Recvd' => ['dl.InsDateTime',10],
+		'Expected Vol' => ['OutputVolume',8],
+		'Actual Vol' => ['CurrentVolume',9],
+		'Time Rec' => ['dl.InsDateTime',10],
 	);
 	
 	# default to country if not set
@@ -341,4 +354,8 @@ sub get_sort_sql {
 	
 	# return sort sql
 	return ($sql . ' ASC', $col);	
+}
+
+sub format_daterange() {
+	return map {$_ =~ /\d{4}(\d{2})(\d{2})/; "$1/$2";} @_;
 }

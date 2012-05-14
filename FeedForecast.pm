@@ -317,7 +317,7 @@ sub get_holidays {
 	my $config = loadConfig();
 	my $qadm = DBI->connect($config->qadm_connection());
 	my $get_holidays = $qadm->prepare(
-		"SELECT CntryName, sde.HolType, sdi.Name
+		"SELECT IsoCtry, sde.HolType, sdi.Name
 		FROM [qai_master].[dbo].[SDExchInfo_v] sde,
 		[qai_master].[dbo].[SDDates_v] sdd,
 		[qai_master].[dbo].[SDInfo_v] sdi
@@ -332,7 +332,7 @@ sub get_holidays {
 	my %holhash = ();
 	while (my @row = $get_holidays->fetchrow_array()) {
 		my ($country,$holtype,$holname) = @row;
-		push @{$holhash{lc $country}}, ($holname, $holtype);  
+		push @{$holhash{$country}}, ($holname, $holtype);  
 	}
 	
 	$get_holidays->finish();
