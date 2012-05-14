@@ -39,8 +39,9 @@ sub handle_request {
 	my $search = $cgi->param('search') ? sprintf("-s \"%s\"",$cgi->param('search')) : '';
 	my $search_type = $cgi->param('search_type') ? '-t ' . $cgi->param('search_type') : '';
 	my $sort = $cgi->param('sort') ? sprintf("-o \"%s\"" , $cgi->param('sort')) : '';
-
-	my $args = "$date $search_type $search $show_late $sort $show_inc";
+	my $timezone = $cgi->param('timezone') ? '-z ' . $cgi->param('timezone') : '';
+	
+	my $args = "$date $search_type $search $show_late $sort $show_inc $timezone";
 	
 	print "HTTP/1.0 200 OK\r\n";
 	print "Content-type: text/html\n\n";

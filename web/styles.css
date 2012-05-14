@@ -36,3 +36,12 @@ color: inherit;
 background:transparent;
 font-weight:bold;
 }
+
+
+tr.lateborder td:first-child { border-left: 4px solid #FF0000; }
+tr.lateborder td:last-child { border-right: 4px solid #FF0000; }
+
+tr.lateborder td {
+	border-top: 4px solid #FF0000;
+	border-bottom: 4px solid #FF0000;
+}

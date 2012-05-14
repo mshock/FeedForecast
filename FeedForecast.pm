@@ -211,7 +211,18 @@ sub wout {
 
 # function to calculate time of day from minute offset
 sub calcTime {
-	my ($offset) = @_; 
+	my ($offset, $tz) = @_;
+	$tz = 'GMT' if !$tz;
+	
+	my %tzs = (
+		'GMT' => 0,
+		'CST' => -6,
+		'IST' => 5.5,
+	);
+	
+	# adjust for timezone	
+	$offset += $tzs{$tz} * 60;
+	
 	my $day = "prev";
 	if ($offset >= 2880) {
 		$offset -= 2880;

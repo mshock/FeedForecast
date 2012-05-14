@@ -6,12 +6,13 @@ use strict;
 use DBI;
 use Getopt::Std;
 use URI::Escape;
-use Date::Manip qw(ParseDate Date_Cmp DateCalc);
+use Date::Manip qw(ParseDate Date_Cmp DateCalc UnixDate);
+use Date::Manip::Date qw(Convert);
 use FeedForecast;
 
-use vars qw($opt_d $opt_l $opt_s $opt_t $opt_o $opt_i);
+use vars qw($opt_d $opt_l $opt_s $opt_t $opt_o $opt_i $opt_z);
 
-getopts('d:ls:t:o:i');
+getopts('d:ls:t:o:iz:');
 
 my $config = FeedForecast::loadConfig();
 
@@ -45,6 +46,17 @@ if ($opt_s && $opt_t) {
 	}
 }
 
+my $timezone = $opt_z ? $opt_z : 'GMT';
+my $ist_selected = '';
+my $cst_selected = '';
+my $gmt_selected = '';
+if ($timezone eq 'CST') {
+	$cst_selected = 'selected=true';
+}
+elsif ($timezone eq 'IST') {
+	$ist_selected = 'selected=true';
+}
+
 # sort params
 my ($sort_sql, $sort_index) = get_sort_sql($opt_o);
 # make sorted column header bold
@@ -56,10 +68,35 @@ foreach (0..10) {
 
 
 my $printdate = pretty_date($dbdate);
+my $headerdate = $printdate;
+my $headertime = "&nbsp&nbsp&nbsp|&nbsp&nbsp&nbsp";
+my $header_control = "<select name='timezone' onchange='this.form.submit()'>
+					<option value='GMT' $gmt_selected >GMT</option>
+					<option value='CST' $cst_selected >CST</option>
+					<option value='IST' $ist_selected >IST</option>
+				</select>";
 if ($dbdate == FeedForecast::calc_date()) {
 	$printdate = FeedForecast::currtime();
+	$printdate =~ /(\d+).(\d+).(\d+)\s+(.*)/;
+	$headerdate = "$1/$2/$3";
+	
+		if ($timezone eq 'GMT') {
+			$headertime .= $4;
+		}	
+		elsif ($timezone eq 'CST') {
+			my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+			$headertime .= sprintf("%02u:%02u:%02u", $hour, $min, $sec);
+		}
+		elsif ($timezone eq 'IST') {
+			my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = gmtime(time + 3600 * 5.5);
+			$headertime .= sprintf("%02u:%02u:%02u", $hour, $min, $sec);
+		}
+	
 }
 
+
+
+$headertime .= $header_control;
 
 my $result = $nndb->prepare("select e.ExchName, nr.ExchID, InputOffset, DayofMonth, DayofWeek, InputVolume, OutputOffset, OutputVolume, CurrentVolume, State, dl.InsDateTime, r.name_
 				from NetResults nr 
@@ -94,7 +131,7 @@ print "<html>
 	<table cellspacing='0' width='100%'>
 		<thead>
 		<tr>
-			<th colspan='12' ><h2>Market Date $printdate GMT</h2></th>
+			<th colspan='12' ><h2>Market Date $headerdate$headertime </h2></th>
 		</tr>
 		<tr>
 			<th colspan='2'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
@@ -166,16 +203,26 @@ my $eo = '';
 foreach my $row (@rows) {
 	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt, $country) = @{$row};
 	
-	my $otime = FeedForecast::calcTime($ooffset);
+	my $ootime = FeedForecast::calcTime($ooffset);
 	
+	my $border_class = '';
+	my $style = '';
 	# if showing late compare times to find late 
 	if ($opt_l && $state eq 'recv') {
-		next if (compareTimes($otime, $insdt) != -1);
+		next if (compareTimes($ootime, $insdt) != -1);
 	}
 	# if showing incomplete, hide recv'd
 	elsif ($opt_i && ($state eq 'recv' || $state eq 'error')) {
 		next;
 	}
+	# highlight recvd late exchanges with red border
+	elsif ($state eq 'recv' && compareTimes($ootime, $insdt) == -1) {
+		$border_class = 'lateborder';
+		$style = 'border: 1px solid black;';
+	}
+	
+	my $otime = FeedForecast::calcTime($ooffset, $timezone);
+	
 	
 	if ($even_odd++ % 2) {
 		$eo = 'odd';
@@ -184,7 +231,7 @@ foreach my $row (@rows) {
 		$eo = 'even';
 	}
 	
-	my $itime = FeedForecast::calcTime($ioffset);
+	my $itime = FeedForecast::calcTime($ioffset, $timezone);
 	
 	$insdt =~ s/:\d\d\..*//;
 	$insdt =~ s/0(\d:)/$1/;
@@ -194,6 +241,11 @@ foreach my $row (@rows) {
 	if (!($state eq 'recv')) {
 		$insdt = '---';
 	}
+	#elsif ($timezone ne 'GMT') {
+#		my $parsed_date = ParseDate($otime);
+#		Convert($parsed_date, [$timezone]);
+#		$insdt = UnixDate($parsed_date, "%Y-%m-%d %h:%m");
+#	}
 	
 	my $holiday = '';
 	if (exists $holidays{lc $country}) {
@@ -205,17 +257,17 @@ foreach my $row (@rows) {
 	# set background accordingly
 	my $row_class = $state . '_' . $eo;
 	
-	print "<tr class='$row_class' $holiday>
+	print "<tr class='$border_class $row_class' $holiday>
 	<td ><span title='Exchange Name'>$name</span></td>
 	<td ><span title='Country/Region'>$country</span></td>
 	<td ><span title='Exchange ID'>$id</span></td>
-	<td ><span title='Last Day Recvd'>$itime ($ioffset)</span></td>
+	<td ><span title='Last Day Recvd ($timezone)'>$itime ($ioffset)</span></td>
 	<td ><span title='Last Volume'>$ivol</span></td>
-	<td ><span title='ETA'>$otime ($ooffset)</span></td>
+	<td ><span title='ETA ($timezone)'>$otime ($ooffset)</span></td>
 	<td ><span title='Expected Volume'>$ovol</span></td>
 	<td ><span title='Actual Volume'>$count</span></td>
-	<td ><span title='Time Recvd'>$insdt</span></td>
-	<td>
+	<td ><span title='Time Recvd (GMT)'>$insdt</span></td>
+	<td >
 			<form>
 			<input type='button' value='Download' onClick=\"window.location.href='charts/$name-$id.xls'\" title='Download History Graph' />
 			</form>
