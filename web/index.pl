@@ -201,12 +201,14 @@ while(my @row = $result->fetchrow_array()) {
 my @rows = $opt_l ? (@late, @recv) : (@late, @wait, @recv, @error);
 my $even_odd = 0;
 my $eo = '';
+my $border_prev = 0;
 foreach my $row (@rows) {
 	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt, $country, $ctrycode) = @{$row};
 	
 	my $ootime = FeedForecast::calcTime($ooffset);
 	
-	my $border_class = '';
+	my $border_class1 = '';
+	my $border_class2 = '';
 	my $style = '';
 	# if showing late compare times to find late 
 	if ($opt_l && $state eq 'recv') {
@@ -218,8 +220,19 @@ foreach my $row (@rows) {
 	}
 	# highlight recvd late exchanges with red border
 	elsif ($state eq 'recv' && compareTimes($ootime, $insdt) == -1) {
-		$border_class = 'lateborder';
-		$style = 'border: 1px solid black;';
+		$border_class1 = 'lateborder1';
+		# i don't like how doubled up borders look...
+		if (!$border_prev) {
+			$border_class2 = 'lateborder2';
+			$border_prev = 1;
+		}
+		else {
+			$border_prev = 0;
+		}
+	}
+	else {
+		$border_prev = 0;
+			
 	}
 	
 	my $otime = FeedForecast::calcTime($ooffset, $timezone);
@@ -274,7 +287,7 @@ foreach my $row (@rows) {
 	# set background accordingly
 	my $row_class = $state . '_' . $eo;
 	
-	print "<tr class='$border_class $row_class' $holiday>
+	print "<tr class='$border_class1 $border_class2 $row_class' $holiday>
 	<td ><span title='Exchange Name'>$name [$id]</span></td>
 	<td ><span title='Country/Region'>$country</span></td>
 	<td ><span title='Last Day Recvd ($timezone)'>$itime</span></td>
