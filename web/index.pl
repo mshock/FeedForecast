@@ -248,7 +248,7 @@ foreach my $row (@rows) {
 		$tz = 'Indian/Cocos' if $timezone eq 'IST';
 		
 		my $parsed_date = ParseDate($insdt);
-		$parsed_date = Date_ConvTZ($parsed_date, 'UTC', $tz);
+		$parsed_date = Date_ConvTZ($parsed_date, 'Europe/London', $tz);
 		$insdt = UnixDate($parsed_date, "%Y-%m-%d %H:%M");
 	}
 	
