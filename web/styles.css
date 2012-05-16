@@ -49,3 +49,16 @@ tr.lateborder2 td {
 tr.lateborder3 td {
 	border-bottom: 4px solid #FF0000;
 }
+
+.laterecvex {
+	border: 3px solid #FF0000;
+	background: #33CC33
+}
+
+.legend {
+	position:absolute;
+	margin-left:70%;
+	background: #DBD7D5;
+	border: 1px solid black;
+	font-size: small;
+}

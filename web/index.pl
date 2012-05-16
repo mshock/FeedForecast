@@ -347,6 +347,50 @@ sub print_thead {
 	print "<body>
 	<form method='GET'>
 	
+	<table class='legend' cellspacing='0' >
+		<tr>
+			<td class='late_even'>
+			&nbsp
+			</td>
+			<td>
+				Late
+			</td>
+		</tr>
+		<tr>
+			<td class='wait_even'>
+			&nbsp
+			</td>
+			<td>
+				Wait
+			</td>
+		</tr>
+		<tr>
+			<td class='recv_even'>
+			&nbsp
+			</td>
+			<td>
+				Received
+			</td>
+		</tr>
+		<tr >
+			<td class='laterecvex'>
+			&nbsp
+			</td>
+			<td>
+				Received Late
+			</td>
+		</tr>
+		<tr>
+			<td class='error_even'>
+			&nbsp
+			</td>
+			<td>
+				Holiday
+			</td>
+		</tr>
+	</table>
+	
+	
 	<table cellspacing='0' width='100%'>
 		<thead>
 		<tr>
