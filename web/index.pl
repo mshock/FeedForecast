@@ -227,10 +227,11 @@ foreach my $row (@rows) {
 			$border_prev = 1;
 		}
 		else {
-			$border_prev = 0;
+			$border_class2 = 'lateborder3';
 		}
 	}
 	else {
+		
 		$border_prev = 0;
 			
 	}

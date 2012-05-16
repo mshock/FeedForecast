@@ -45,3 +45,7 @@ tr.lateborder2 td {
 	border-top: 4px solid #FF0000;
 	border-bottom: 4px solid #FF0000;
 }
+
+tr.lateborder3 td {
+	border-bottom: 4px solid #FF0000;
+}
