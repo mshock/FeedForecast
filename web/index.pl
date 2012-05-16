@@ -36,11 +36,11 @@ my $exch_selected = '';
 my $country_selected = '';
 if ($opt_s && $opt_t) {
 	if ($opt_t eq 'exchange') {
-		$search = "and nr.ExchName = '$opt_s'";
+		$search = "and nr.ExchName LIKE '%$opt_s%'";
 		$exch_selected = 'selected=true'; 
 	}
 	elsif ($opt_t eq 'country') {
-		$search = "and r.name_ = '$opt_s'";
+		$search = "and r.name_ LIKE '%$opt_s%'";
 		$country_selected = 'selected=true';
 	}
 }
