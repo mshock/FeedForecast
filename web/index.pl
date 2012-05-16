@@ -121,54 +121,11 @@ my ($ndate,$pdate,$cdate) = format_daterange($nextdate,$prevdate,$dbdate);
 
 my $header_hover = 'title=\'click to sort\'';
 
-print "<html>
-<head>
-<meta http-equiv='refresh' content='300' > 
-<title>Monitor :: Market Date $headerdate</title>
-<link rel='stylesheet' type='text/css' href='styles.css' />
-</head>
-<body>
-	<form method='GET'>
-	
-	<table cellspacing='0' width='100%'>
-		<thead>
-		<tr>
-			<th colspan='11' ><h2>Market Date $headerdate$headertime </h2></th>
-		</tr>
-		<tr>
-			<th colspan='1'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
-			<th colspan='5'>
-				<input type='submit' value='search'/> 
-				<input type='reset' value='reset' onclick='parent.location=\"?\"'/>
-				<input type='text' name='date' value='$pretty_date' />
-				<input type='text' name='search' value='$opt_s' title='Search'/>
-				<select name='search_type'>
-					<option value='exchange' $exch_selected >Exchange</option>
-					<option value='country' $country_selected >Country</option>
-				</select>
-				<br />
-				<input type='checkbox' name='show_late' value='true' $late_checked/> Show Late
-				<input type='checkbox' name='show_incomplete' value='true' $inc_checked/> Show Incomplete
-				<input type='button' value='Export' onClick=\"window.location.href='charts/report_$dbdate.xls'\" />
-				
-				
-			</th>
-			<th colspan='3'>($nextdate) next <a href='?date=$nextdate'>>></a></th>
-		</tr>
-		<tr>
-			<th><input type='submit' class='$colsort[0]' name='sort' value='Exchange Name' $header_hover /></th>
-			<th><input type='submit' class='$colsort[1]' name='sort' value='Country' $header_hover /></th>
-			<th><input type='submit' class='$colsort[3]' name='sort' value='Last Day Rec' $header_hover /></th>
-			<th><input type='submit' class='$colsort[6]' name='sort' value='Last Vol' $header_hover /></th>
-			<th><input type='submit' class='$colsort[7]' name='sort' value='ETA' $header_hover /></th>
-			<th><input type='submit' class='$colsort[8]' name='sort' value='Expected Vol' $header_hover /></th>
-			<th><input type='submit' class='$colsort[9]' name='sort' value='Actual Vol' $header_hover /></th>
-			<th><input type='submit' class='$colsort[10]' name='sort' value='Time Rec' $header_hover /></th>
-			<th><input type='submit' class='headerunsort' value='Graph' title='Download History Graph' /></th>
-			
-		</tr>
-		</thead>
-		<tbody>";
+# print html header
+print_header();
+
+# print table header
+print_thead();
 
 # get all the holidays for today
 $pretty_date =~ /(\d+).(\d+).(\d+)/;
@@ -268,9 +225,9 @@ foreach my $row (@rows) {
 	
 	
 	# add dates for curr/next/prev
-	$itime =~ s/curr/$cdate/;
-	$itime =~ s/next/$ndate/;
-	$itime =~ s/prev/$pdate/;
+	#$itime =~ s/curr/$cdate/;
+	#$itime =~ s/next/$ndate/;
+	#$itime =~ s/prev/$pdate/;
 	
 	$otime =~ s/curr/$cdate/;
 	$otime =~ s/next/$ndate/;
@@ -373,6 +330,60 @@ sub get_sort_sql {
 	return ($sql . ' ASC', $col);	
 }
 
-sub format_daterange() {
+sub format_daterange {
 	return map {$_ =~ /\d{4}(\d{2})(\d{2})/; "$1/$2";} @_;
+}
+
+sub print_header {
+	print "<html>
+	<head>
+	<meta http-equiv='refresh' content='300' > 
+	<title>Monitor :: Market Date $headerdate</title>
+	<link rel='stylesheet' type='text/css' href='styles.css' />
+	</head>";
+}
+
+sub print_thead {
+	print "<body>
+	<form method='GET'>
+	
+	<table cellspacing='0' width='100%'>
+		<thead>
+		<tr>
+			<th colspan='11' ><h2>Market Date $headerdate$headertime </h2></th>
+		</tr>
+		<tr>
+			<th colspan='1'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
+			<th colspan='5'>
+				<input type='submit' value='search'/> 
+				<input type='reset' value='reset' onclick='parent.location=\"?\"'/>
+				<input type='text' name='date' value='$pretty_date' />
+				<input type='text' name='search' value='$opt_s' title='Search'/>
+				<select name='search_type'>
+					<option value='exchange' $exch_selected >Exchange</option>
+					<option value='country' $country_selected >Country</option>
+				</select>
+				<br />
+				<input type='checkbox' name='show_late' value='true' $late_checked/> Show Late
+				<input type='checkbox' name='show_incomplete' value='true' $inc_checked/> Show Incomplete
+				<input type='button' value='Export' onClick=\"window.location.href='charts/report_$dbdate.xls'\" />
+				
+				
+			</th>
+			<th colspan='3'>($nextdate) next <a href='?date=$nextdate'>>></a></th>
+		</tr>
+		<tr>
+			<th><input type='submit' class='$colsort[0]' name='sort' value='Exchange Name' $header_hover /></th>
+			<th><input type='submit' class='$colsort[1]' name='sort' value='Country' $header_hover /></th>
+			<th><input type='submit' class='$colsort[3]' name='sort' value='Last Day Rec' $header_hover /></th>
+			<th><input type='submit' class='$colsort[6]' name='sort' value='Last Vol' $header_hover /></th>
+			<th><input type='submit' class='$colsort[7]' name='sort' value='ETA' $header_hover /></th>
+			<th><input type='submit' class='$colsort[8]' name='sort' value='Expected Vol' $header_hover /></th>
+			<th><input type='submit' class='$colsort[9]' name='sort' value='Actual Vol' $header_hover /></th>
+			<th><input type='submit' class='$colsort[10]' name='sort' value='Time Rec' $header_hover /></th>
+			<th><input type='submit' class='headerunsort' value='Graph' title='Download History Graph' /></th>
+			
+		</tr>
+		</thead>
+		<tbody>";
 }
