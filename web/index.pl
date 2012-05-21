@@ -60,7 +60,7 @@ elsif ($timezone eq 'IST') {
 my ($sort_sql, $sort_index) = get_sort_sql($opt_o);
 # make sorted column header bold
 my @colsort;
-foreach (0..10) {
+foreach (0..13) {
 	$colsort[$_] = $sort_index == $_ ? 'headersort' : 'headerunsort';
 }
 
@@ -97,7 +97,7 @@ if ($dbdate == FeedForecast::calc_date()) {
 
 $headertime .= $header_control;
 
-my $result = $nndb->prepare("select e.ExchName, nr.ExchID, InputOffset, DayofMonth, DayofWeek, InputVolume, OutputOffset, OutputVolume, CurrentVolume, State, dl.InsDateTime, r.name_, e.ExchCtryCode
+my $result = $nndb->prepare("select e.ExchName, nr.ExchID, InputOffset, DayofMonth, DayofWeek, InputVolume, OutputOffset, OutputVolume, CurrentVolume, State, dl.InsDateTime, r.name_, e.ExchCtryCode, dl.BuildNumber, dl.FileNumber, dl.FileDate
 				from NetResults nr 
 					join DaemonLogs dl 
 						on nr.Date = dl.Date and nr.ExchID = dl.ExchID
@@ -160,7 +160,7 @@ my $even_odd = 0;
 my $eo = '';
 my $border_prev = 0;
 foreach my $row (@rows) {
-	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt, $country, $ctrycode) = @{$row};
+	my ($name, $id, $ioffset, $dom, $dow, $ivol, $ooffset, $ovol, $count, $state, $insdt, $country, $ctrycode, $buildnum, $filenum, $filedate) = @{$row};
 	
 	my $ootime = FeedForecast::calcTime($ooffset);
 	
@@ -210,6 +210,15 @@ foreach my $row (@rows) {
 	if (!$count) {
 		$count = '---';
 	}
+	if (!$buildnum) {
+		$buildnum = '---';
+		$filedate = '---';
+		$filenum = '---';
+	}
+	else {
+		$filedate =~ s/\s.*//;
+	}
+	
 	if (!($state eq 'recv')) {
 		$insdt = '---';
 	}
@@ -254,6 +263,9 @@ foreach my $row (@rows) {
 	<td ><span title='Expected Volume'>$ovol</span></td>
 	<td ><span title='Actual Volume'>$count</span></td>
 	<td ><span title='Time Recvd ($timezone)'>$insdt</span></td>
+	<td ><span title='Build Number'>$buildnum</span></td>
+	<td ><span title='File Number'>$filenum</span></td>
+	<td ><span title='File Date'>$filedate</span></td>
 	<td >
 			<form>
 			<input type='button' value='Download' onClick=\"window.location.href='charts/$name-$id.xls'\" title='Download History Graph' />
@@ -316,6 +328,9 @@ sub get_sort_sql {
 		'Expected Vol' => ['OutputVolume',8],
 		'Actual Vol' => ['CurrentVolume',9],
 		'Time Rec' => ['dl.InsDateTime',10],
+		'Build #' => ['dl.BuildNumber', 11],
+		'File #' => ['dl.FileNumber', 12],
+		'File Date' => ['dl.FileDate', 13]
 	);
 	
 	# default to country if not set
@@ -394,11 +409,11 @@ sub print_thead {
 	<table cellspacing='0' width='100%'>
 		<thead>
 		<tr>
-			<th colspan='11' ><h2>Market Date $headerdate$headertime </h2></th>
+			<th colspan='14' ><h2>Market Date $headerdate$headertime </h2></th>
 		</tr>
 		<tr>
 			<th colspan='1'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
-			<th colspan='5'>
+			<th colspan='8'>
 				<input type='submit' value='search'/> 
 				<input type='reset' value='reset' onclick='parent.location=\"?\"'/>
 				<input type='text' name='date' value='$pretty_date' />
@@ -425,6 +440,9 @@ sub print_thead {
 			<th><input type='submit' class='$colsort[8]' name='sort' value='Expected Vol' $header_hover /></th>
 			<th><input type='submit' class='$colsort[9]' name='sort' value='Actual Vol' $header_hover /></th>
 			<th><input type='submit' class='$colsort[10]' name='sort' value='Time Rec' $header_hover /></th>
+			<th><input type='submit' class='$colsort[11]' name='sort' value='Build #' $header_hover /></th>
+			<th><input type='submit' class='$colsort[12]' name='sort' value='File #' $header_hover /></th>
+			<th><input type='submit' class='$colsort[13]' name='sort' value='File Date' $header_hover /></th>
 			<th><input type='submit' class='headerunsort' value='Graph' title='Download History Graph' /></th>
 			
 		</tr>

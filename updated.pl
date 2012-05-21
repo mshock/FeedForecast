@@ -172,6 +172,14 @@ sub make_pass {
 			$email_body .= "$name [$exchange]\n";
 		}
 		
+		# fork a process to update fildate,filenum,buildnum if this was just recv'd
+		if ($prevhash{$exchange}{state} ne 'recv' && $state eq 'recv') {
+			if (fork()) {
+				exec("perl update_completed.pl $date $exchange");
+				exit;
+			}
+		}
+		
 		my $hashdump = join(',',($name, $exchange, $to, $dom, $dow, $vol, $to2, $vol2, $count, $state));
 		#print "$hashdump\n";
 		my $curdate = FeedForecast::currtime();

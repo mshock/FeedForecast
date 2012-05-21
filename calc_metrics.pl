@@ -124,7 +124,7 @@ sub calc_finish {
 	
 	
 	# get execution time from marketinfo table
-	my $get_marketinfo = $disfl->prepare("select ExecutionDateTime, BuildNumber
+	my $get_marketinfo = $disfl->prepare("select ExecutionDateTime, BuildNumber,MakeUpdateSequence,MakeUpdateRunDate
 		from [DISForLegacy].[dbo].[MakeUpdateInfo] with (NOLOCK)
 		where DISTransactionNumber = ?
 		and DataFeedId = 'DS2_EQIND_DAILY'");
@@ -186,8 +186,10 @@ sub calc_finish {
 			#	 $errors{$t_id} = 1;
 			#	 next;
 			#}
-			wlog(4, "added new marketinfo row: $mi_row[0], $mi_row[1]");
-			($marketinfo{$t_id}{'edt'}, $marketinfo{$t_id}{'bnum'}) = @mi_row;
+			
+			# buildnum, filenum, filedate for future NN inputs
+			wlog(4, "added new marketinfo row: $mi_row[0], $mi_row[1], $mi_row[2], $mi_row[3]");
+			($marketinfo{$t_id}{'edt'}, $marketinfo{$t_id}{'bnum'}, $marketinfo{$t_id}{'fnum'}, $marketinfo{$t_id}{'fdate'}) = @mi_row;
 		}
 		
 		$trans_info{$marketdate}{'count'}++;
