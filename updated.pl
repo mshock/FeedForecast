@@ -174,7 +174,7 @@ sub make_pass {
 		
 		# fork a process to update fildate,filenum,buildnum if this was just recv'd
 		if ($prevhash{$exchange}{state} ne 'recv' && $state eq 'recv') {
-			if (fork()) {
+			if (!fork()) {
 				exec("perl update_completed.pl $date $exchange");
 				exit;
 			}
