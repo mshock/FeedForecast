@@ -215,8 +215,12 @@ foreach my $row (@rows) {
 		$filedate = '---';
 		$filenum = '---';
 	}
-	else {
+	elsif ($filedate) {
 		$filedate =~ s/\s.*//;
+	}
+	else {
+		$filedate = '---';
+		$filenum = '---';
 	}
 	
 	if (!($state eq 'recv')) {
