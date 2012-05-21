@@ -35,6 +35,13 @@ my @results = $info_query->fetchrow_array();
 $info_query->finish();
 $ds2_c->disconnect();
 
+if (!$results[2]) {
+	$results[2] = 'NULL';
+}
+if (!$results[4]) {
+	$results[4] = 'NULL';
+}
+
 my $update_query = $nndb->prepare(
 "update DaemonLogs 
 set BuildNumber = ?,
