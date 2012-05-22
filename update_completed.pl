@@ -11,8 +11,7 @@ use FeedForecast;
 
 my $config = FeedForecast::loadConfig();
 
-#my $marketdate = $ARGV[0];
-my $marketdate = '20120522';
+my $marketdate = $ARGV[0];
 
 my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
 
