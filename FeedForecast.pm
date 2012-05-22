@@ -152,7 +152,8 @@ sub loadConfig {
 	$config->set('show_late', 45);
 	$config->set('smtp_server', 'mailhub.tfn.com');
 	$config->set('update_procs', 1);
-		
+	$config->set('update_window', 60);
+	
 	# load config file (override with CLI args)
 	$config->file($config->conf_file());
 	

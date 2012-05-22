@@ -13,6 +13,8 @@ my $config = FeedForecast::loadConfig();
 
 my $marketdate = $ARGV[0];
 
+print "starting $marketdate\n";
+
 my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
 
 my $check_completed = $nndb->prepare("select ExchID,insdatetime from 
@@ -79,7 +81,7 @@ foreach my $exchange (@{$incomplete}) {
 	
 	# check if query has executed after exchange was marked as received
 	my $parsed_exec = ParseDate($exec_time);
-	$parsed_exec = DateCalc($parsed_exec, 'in 30 minutes');
+	$parsed_exec = DateCalc($parsed_exec, 'in '. $config->update_window() .  ' minutes');
 	my $parsed_insdt = ParseDate($insdt);
 	if(Date_Cmp($parsed_exec, $parsed_insdt) != 1) {
 		print "$exchid date_cmp failed ($exec_time vs $insdt) must be stale\n";
@@ -96,6 +98,8 @@ foreach my $exchange (@{$incomplete}) {
 	and Date = '$marketdate'"
 	);
 	
+	print "$exchid: $buildnum $filenum $filedate\n";
+	
 	# if made it this far, run update
 	$update_query->execute($buildnum,$filenum,$exchid);
 	$update_query->finish();
@@ -107,3 +111,4 @@ foreach my $exchange (@{$incomplete}) {
 }
 
 $forkManager->wait_all_children;
+print "finished $marketdate";
