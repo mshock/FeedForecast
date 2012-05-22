@@ -9,9 +9,27 @@ use Date::Manip qw(ParseDate Date_Cmp DateCalc);
 use Parallel::ForkManager;
 use FeedForecast;
 
-my $config = FeedForecast::loadConfig();
 
 my $marketdate = $ARGV[0];
+
+open(LOCK, '<', "logs/$marketdate.lock");
+my @lock = <LOCK>;
+close LOCK;
+if ($lock[0] =~ /locked/) {
+	exit;
+}
+else {
+	open(LOCK, '>', "logs/$marketdate.lock");
+	print LOCK 'locked';
+	close LOCK;
+}
+
+
+
+my $config = FeedForecast::loadConfig();
+
+
+
 
 print "starting $marketdate\n";
 
@@ -108,4 +126,10 @@ foreach my $exchange (@{$incomplete}) {
 }
 
 $forkManager->wait_all_children;
+
+open(LOCK, '>', "logs/$marketdate.lock");
+print LOCK '';
+close LOCK;
+
 print "finished $marketdate";
+
