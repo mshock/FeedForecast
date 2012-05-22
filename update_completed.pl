@@ -16,9 +16,11 @@ open(LOCK, '<', "logs/$marketdate.lock");
 my @lock = <LOCK>;
 close LOCK;
 if ($lock[0] =~ /locked/) {
+	print "lockfile is locked, exiting\n";
 	exit;
 }
 else {
+	print "locking lockfile\n";
 	open(LOCK, '>', "logs/$marketdate.lock");
 	print LOCK 'locked';
 	close LOCK;
