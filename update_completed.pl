@@ -72,12 +72,9 @@ foreach my $exchange (@{$incomplete}) {
 		$forkManager->finish;
 	}
 	# if makeupdate hasn't been run, null values
-	if (!$filedate) {
-		$filedate = 'NULL';
-	}
-	if (!$filenum) {
-		$filenum = 'NULL';
-	}
+	# if makeupdate hasn't been run, null values
+	$filedate = $filedate ? "'$filedate'":'NULL';
+	$filenum = $filenum ? $filenum :undef;
 	
 	# check if query has executed after exchange was marked as received
 	my $parsed_exec = ParseDate($exec_time);
@@ -93,7 +90,7 @@ foreach my $exchange (@{$incomplete}) {
 	"update DaemonLogs 
 	set BuildNumber = ?,
 	FileNumber = ?,
-	FileDate = '$filedate'
+	FileDate = $filedate
 	where ExchID = ?
 	and Date = '$marketdate'"
 	);

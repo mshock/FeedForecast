@@ -72,9 +72,10 @@ sub make_pass {
 	
 	
 	# fork update process to get buildnum, filenum and filedate
-	if (!fork()) {
-				exec("perl update_completed.pl $date");
-	}
+	#if (!fork()) {
+ 	# try to create an independant process
+	system 1, "perl update_completed.pl $date";
+	#}
 	
 	# load hash with exchange forecasts
 	
@@ -171,9 +172,9 @@ sub make_pass {
 			next;
 		}
 		
-		if ($prevhash{$exchange}{state} ne 'recv' && $state eq 'recv') {
-			print "$name $date state: ". $prevhash{$exchange}{state} . "\n";
-		}
+		#if ($prevhash{$exchange}{state} ne 'recv' && $state eq 'recv') {
+		#	print "$name $date state: ". $prevhash{$exchange}{state} . "\n";
+		#}
 		
 		
 		# check if this exchange is just now being marked late
