@@ -50,10 +50,11 @@ do {
 	}
 	else {
 		make_pass($prevdate, 1);
+		print FeedForecast::currtime() . "\tfinished previous day update task\n";
 		exit;
 	}
 	
-	print FeedForecast::currtime() . "\tfinished update task\n";
+	print FeedForecast::currtime() . "\tfinished current day update task\n";
 } while (!$runonce);
 
 # make a daemon pass for given date
