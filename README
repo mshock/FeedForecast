@@ -6,9 +6,8 @@
 #############################################################################
 
 TODO:
-	- DS Build #
-	- AUD counts
-	- File date and file #
+	- AUD counts?
 	- Backend support of Holidays
 	- Debug e-mail reports
 	- volume graphs
+	- NN daily and cumulative scores
