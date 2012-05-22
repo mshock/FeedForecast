@@ -71,6 +71,11 @@ sub make_pass {
 				order by 1 ASC");
 	
 	
+	# fork update process to get buildnum, filenum and filedate
+	if (!fork()) {
+				exec("perl update_completed.pl $date");
+	}
+	
 	# load hash with exchange forecasts
 	
 	my $select_result = $nndb->prepare("select [ExchID]
@@ -166,18 +171,15 @@ sub make_pass {
 			next;
 		}
 		
+		if ($prevhash{$exchange}{state} ne 'recv' && $state eq 'recv') {
+			print "$name $date state: ". $prevhash{$exchange}{state} . "\n";
+		}
+		
+		
 		# check if this exchange is just now being marked late
 		# add it to the email body if it is
 		if (!%prevhash || ($prevhash{$exchange}{state} eq 'wait' && $state eq 'late')) {
 			$email_body .= "$name [$exchange]\n";
-		}
-		
-		# fork a process to update fildate,filenum,buildnum if this was just recv'd
-		if ($prevhash{$exchange}{state} ne 'recv' && $state eq 'recv') {
-			if (!fork()) {
-				exec("perl update_completed.pl $date $exchange");
-				exit;
-			}
 		}
 		
 		my $hashdump = join(',',($name, $exchange, $to, $dom, $dow, $vol, $to2, $vol2, $count, $state));
