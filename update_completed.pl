@@ -27,7 +27,7 @@ $check_completed->finish();
 $nndb->disconnect();
 
 # create a ForkManager to manage forking
-my $forkManager = new Parallel::ForkManager(5);
+my $forkManager = new Parallel::ForkManager($config->update_procs());
 foreach my $exchange (@{$incomplete}) {
 	# fork a new process if needed
 	$forkManager->start and next;
