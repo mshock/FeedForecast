@@ -88,12 +88,16 @@ foreach my $exchange (@{$exchanges}) {
 	# configure Excel chart
 	my $workbook = Spreadsheet::WriteExcel->new("$chartdir/$exchname-$exchid.xls");
 	my $worksheet = $workbook->add_worksheet();
-	my $chart = $workbook->add_chart( type => 'line');
-	$chart->add_series(
+	my $timechart = $workbook->add_chart( type => 'line', name => 'time chart');
+	$timechart->add_series(
 		values => "=Sheet1!\$A\$1:\$A$datacount",
 	);
-	my $chartdata = [];
-	
+	my $volchart = $workbook->add_chart( type => 'line', name => 'volume chart');
+	$volchart->add_series(
+		values => "=Sheet1!\$B\$1:\$B$datacount",
+	);
+	my $timedata = [];
+	my $voldata = [];
 	
 	my $first = 1;
 	my $last = 0;
@@ -125,7 +129,8 @@ foreach my $exchange (@{$exchanges}) {
 				print TRAIN "$timeoffset $volume\n";
 				print TRAIN1 "$timeoffset\n";
 				print TRAIN3 "$volume\n";
-				push @{$chartdata}, $timeoffset;
+				push @{$timedata}, $timeoffset;
+				push @{$voldata}, $volume;
 			}
 			else {
 				$first = 0;
@@ -144,7 +149,8 @@ foreach my $exchange (@{$exchanges}) {
 				push @points, [ 
 						[$ptimeoffset, $pmday, $pwday, $pvolume],
 						[$timeoffset, $volume]];
-				push @{$chartdata}, $timeoffset;
+				push @{$timedata}, $timeoffset;
+				push @{$voldata}, $volume;
 				#print "added point: [$ptimeoffset, $pmday, $pwday, $pvolume],
 				#		[$timeoffset, $volume]\n";
 			}
@@ -192,7 +198,8 @@ foreach my $exchange (@{$exchanges}) {
 	close TRAIN3;
 	
 	# generate Excel spreadsheet
-	$worksheet->write('A1', [$chartdata]);
+	$worksheet->write('A1', [$timedata]);
+	$worksheet->write('B1', [$voldata]);
 	
 	# train specified number of iterations of networks
 	# pick the best one to use
