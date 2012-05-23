@@ -71,13 +71,6 @@ sub make_pass {
 				group by exchintcode
 				order by 1 ASC");
 	
-	
-	# fork update process to get buildnum, filenum and filedate
-	#if (!fork()) {
- 	# try to create an independant process
-	system 1, "perl update_completed.pl $date";
-	#}
-	
 	# load hash with exchange forecasts
 	
 	my $select_result = $nndb->prepare("select [ExchID]
@@ -221,6 +214,9 @@ sub make_pass {
 		my $subject_line = '';
 		FeedForecast::send_email($email_body,$subject_line,1,$config->smtp_server());
 	}
+	
+	# try to create an independant process to handle filenum,fildate,buildnum updates
+	system 1, "perl update_completed.pl $date";
 	
 	# create new Excel sheet
 	system("perl generate_report.pl $date") == 0 or warn "could not create spreadsheet: $!\n";
