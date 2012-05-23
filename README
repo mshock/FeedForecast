@@ -6,8 +6,8 @@
 #############################################################################
 
 TODO:
+	- Use execution time as time recvd
 	- AUD counts?
 	- Backend support of Holidays
 	- Debug e-mail reports
-	- volume graphs
 	- NN daily and cumulative scores
