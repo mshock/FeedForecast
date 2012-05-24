@@ -37,7 +37,7 @@ print "starting $marketdate\n";
 
 my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
 
-my $check_completed = $nndb->prepare("select ExchID,insdatetime from 
+my $check_completed = $nndb->prepare("select ExchID,insdatetime,CurrentVolume from 
 				DaemonLogs where
 				Date = '$marketdate' and
 				State = 'recv' and
@@ -73,7 +73,7 @@ foreach my $exchange (@{$incomplete}) {
 			order by c DESC");
 	
 	
-	my ($exchid, $insdt) = @{$exchange};
+	my ($exchid, $insdt, $curvol) = @{$exchange};
 	
 	print "checking $exchid, $insdt\n";
 	
@@ -82,7 +82,7 @@ foreach my $exchange (@{$incomplete}) {
 	$info_query->finish();
 	$ds2_c->disconnect();
 	
-	my ($exec_time, $filedate, $filenum, $buildnum) = @results;
+	my ($exec_time, $filedate, $filenum, $buildnum, $count) = @results;
 	
 	print " $exchid results: @results\n";
 	
@@ -97,11 +97,12 @@ foreach my $exchange (@{$incomplete}) {
 	$filenum = $filenum ? $filenum :undef;
 	
 	# check if query has executed after exchange was marked as received
+	# also test the volume recvd to make sure this isn't a false negative
 	my $parsed_exec = ParseDate($exec_time);
 	$parsed_exec = DateCalc($parsed_exec, 'in '. $config->update_window() .  ' minutes');
 	my $parsed_insdt = ParseDate($insdt);
-	if(Date_Cmp($parsed_exec, $parsed_insdt) != 1) {
-		print "$exchid date_cmp failed ($exec_time vs $insdt) must be stale\n";
+	if((Date_Cmp($parsed_exec, $parsed_insdt) != 1) && ($curvol * .25 > $count)) {
+		print "$exchid date_cmp failed ($exec_time << $insdt) && ($curvol * .25 > $count) must be stale\n";
 		# exit child process
 		$forkManager->finish;
 	}
@@ -119,6 +120,10 @@ foreach my $exchange (@{$incomplete}) {
 	
 	# if made it this far, run update
 	$update_query->execute($buildnum,$filenum,$exchid);
+	
+	# update the time received with the executiontime, which is more accurate 
+	
+	
 	$update_query->finish();
 	$nndb->disconnect();
 	
