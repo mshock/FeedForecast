@@ -135,7 +135,7 @@ sub loadConfig {
 	# delta value for adjustment calculation
 	$config->set('delta', .2);
 	# amount of time a feed can be late (minutes) before marked late
-	$config->set('late_thresh', 10);
+	$config->set('late_thresh', 45);
 	# port to host application server on
 	$config->set('serverport', 8888);
 	$config->set('serverlog', 'logs/server.log');
