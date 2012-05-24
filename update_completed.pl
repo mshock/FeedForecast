@@ -90,6 +90,7 @@ foreach my $exchange (@{$incomplete}) {
 	if (!$exec_time) {
 		# exit child process
 		$forkManager->finish;
+		next;
 	}
 	# if makeupdate hasn't been run, null values
 	# if makeupdate hasn't been run, null values
@@ -105,13 +106,15 @@ foreach my $exchange (@{$incomplete}) {
 		print "$exchid date_cmp failed ($exec_time << $insdt) && ($curvol * .25 > $count) must be stale\n";
 		# exit child process
 		$forkManager->finish;
+		next;
 	}
 	
 	my $update_query = $nndb->prepare(
 	"update DaemonLogs 
 	set BuildNumber = ?,
 	FileNumber = ?,
-	FileDate = $filedate
+	FileDate = $filedate,
+	InsDateTime = ?
 	where ExchID = ?
 	and Date = '$marketdate'"
 	);
@@ -119,7 +122,7 @@ foreach my $exchange (@{$incomplete}) {
 	print "$exchid: $buildnum $filenum $filedate\n";
 	
 	# if made it this far, run update
-	$update_query->execute($buildnum,$filenum,$exchid);
+	$update_query->execute($buildnum,$filenum,$exec_time,$exchid);
 	
 	# update the time received with the executiontime, which is more accurate 
 	
