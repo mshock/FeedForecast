@@ -137,6 +137,7 @@ foreach my $exchange (@{$incomplete}) {
 
 $forkManager->wait_all_children;
 
+print "unlocking lock file\n";
 open(LOCK, '>', "logs/$marketdate.lock");
 print LOCK '';
 close LOCK;
