@@ -106,8 +106,7 @@ my $result = $nndb->prepare("select e.ExchName, nr.ExchID, InputOffset, DayofMon
 					join regions r
 						on r.region = e.exchctrycode
 				where 
-				 nr.Date = '$dbdate' and
-				 r.regcodetypeid = 1
+				 nr.Date = '$dbdate'
 				 $search
 				 order by $sort_sql");
 $result->execute();
@@ -169,14 +168,14 @@ foreach my $row (@rows) {
 	my $style = '';
 	# if showing late compare times to find late 
 	if ($opt_l && $state eq 'recv') {
-		next if (compareTimes($ootime, $insdt) != -1);
+		next if (FeedForecast::compareTimes($ootime, $insdt, $dbdate) != -1);
 	}
 	# if showing incomplete, hide recv'd
 	elsif ($opt_i && ($state eq 'recv' || $state eq 'error')) {
 		next;
 	}
 	# highlight recvd late exchanges with red border
-	elsif ($state eq 'recv' && compareTimes($ootime, $insdt) == -1) {
+	elsif ($state eq 'recv' && FeedForecast::compareTimes($ootime, $insdt, $dbdate) == -1) {
 		$border_class1 = 'lateborder1';
 		# i don't like how doubled up borders look...
 		if (!$border_prev) {
@@ -291,30 +290,6 @@ sub pretty_date {
 	$date =~ m/(\d{4})(\d{2})(\d{2})/;
 	return "$1/$2/$3";
 	
-}
-
-sub compareTimes {
-	my ($otime, $insert_dt) = @_;
-	# feed offset converted to prev/cur/next hh:mm
-	# and sql datetime in y-m-d hh:mm
-	my $date = $dbdate;
-	if ($otime =~ m/prev/) {
-		($date,,) = FeedForecast::decrement_day($dbdate);	
-	}
-	elsif ($otime =~ m/next/) {
-		$dbdate =~ m/(\d{4})(\d{2})(\d{2})/;
-		my $tmpdate = "$1-$2-$3";
-		$date = FeedForecast::increment_day($tmpdate);
-	}
-	
-	$otime =~ m/(\d+:\d+)/;
-	$otime = "$date $1";
-	
-	my $forecasted = ParseDate($otime);
-	$forecasted = DateCalc($forecasted, 'in ' . $config->show_late() . ' minutes');
-	my $recvd = ParseDate($insert_dt);
-	
-	return Date_Cmp($forecasted, $recvd);
 }
 
 sub get_sort_sql {

@@ -123,14 +123,15 @@ foreach my $exchange (@{$incomplete}) {
 	
 	# if made it this far, run update
 	$update_query->execute($buildnum,$filenum,$exec_time,$exchid);
-	
-	# update the time received with the executiontime, which is more accurate 
-	
-	
 	$update_query->finish();
+	
 	$nndb->disconnect();
 	
 	print "updated $exchid on $marketdate with @results\n";
+	
+	# fork an async process to update NN score
+	system 1, "perl update_score.pl $marketdate $exchid";
+	
 	# exit child process
 	$forkManager->finish;
 }

@@ -8,6 +8,7 @@ package FeedForecast;
 use strict;
 use AppConfig qw(:argcount);
 use Date::Calc qw(Add_Delta_Days Day_of_Week);
+use Date::Manip qw(ParseDate Date_Cmp DateCalc UnixDate Date_ConvTZ);
 use Net::SMTP;
 use DBI;
 
@@ -341,4 +342,32 @@ sub get_holidays {
 	$qadm->disconnect();
 	
 	return %holhash;
+}
+
+
+# compare an offset to a db datetime
+# feed offset converted to prev/cur/next hh:mm
+# and sql datetime in y-m-d hh:mm
+sub compareTimes {
+	my ($otime, $insert_dt, $date) = @_;
+	
+	my $config = loadConfig();
+	
+	if ($otime =~ m/prev/) {
+		($date,,) = FeedForecast::decrement_day($date);	
+	}
+	elsif ($otime =~ m/next/) {
+		$date =~ m/(\d{4})(\d{2})(\d{2})/;
+		my $tmpdate = "$1-$2-$3";
+		$date = FeedForecast::increment_day($tmpdate);
+	}
+	
+	$otime =~ m/(\d+:\d+)/;
+	$otime = "$date $1";
+	
+	my $forecasted = ParseDate($otime);
+	$forecasted = DateCalc($forecasted, 'in ' . $config->show_late() . ' minutes');
+	my $recvd = ParseDate($insert_dt);
+	
+	return Date_Cmp($forecasted, $recvd);
 }
