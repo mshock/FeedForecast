@@ -93,7 +93,8 @@ if ($dbdate == FeedForecast::calc_date()) {
 	
 }
 
-
+# get scores for header
+my @scores = get_scores();
 
 $headertime .= $header_control;
 
@@ -124,7 +125,7 @@ my $header_hover = 'title=\'click to sort\'';
 print_header();
 
 # print table header
-print_thead();
+print_thead(@scores);
 
 # get all the holidays for today
 $pretty_date =~ /(\d+).(\d+).(\d+)/;
@@ -337,11 +338,86 @@ sub print_header {
 	</head>";
 }
 
+sub get_scores {
+	my $negvolq = $nndb->prepare("select sum(VolumeScore) from DaemonLogs where 
+		Date = '$dbdate' and VolumeScore < 0");
+	my $posvolq = $nndb->prepare("select sum(VolumeScore) from DaemonLogs where 
+		Date = '$dbdate' and VolumeScore > 0");
+	my $negtimeq = $nndb->prepare("select sum(TimeScore) from DaemonLogs where 
+		Date = '$dbdate' and TimeScore < 0");
+	my $postimeq = $nndb->prepare("select sum(TimeScore) from DaemonLogs where 
+		Date = '$dbdate' and TimeScore > 0");
+	my $totalq = $nndb->prepare("select sum(TimeScore), sum(VolumeScore) from DaemonLogs");
+	
+	$negvolq->execute();
+	my $negvol = ($negvolq->fetchrow_array())[0];
+	$negvolq->finish();
+	
+	$posvolq->execute();
+	my $posvol = ($posvolq->fetchrow_array())[0];
+	$posvolq->finish();
+	
+	$negtimeq->execute();
+	my $negtime = ($negtimeq->fetchrow_array())[0];
+	$negtimeq->finish();
+	
+	$postimeq->execute();
+	my $postime = ($postimeq->fetchrow_array())[0];
+	$postimeq->finish();
+	
+	$totalq->execute();
+	my $total = ($totalq->fetchrow_array())[0];
+	$totalq->finish();
+	
+	my $totvol = $posvol+$negvol;
+	my $tottime = $postime+$negtime;
+	my $subtot = $totvol + $tottime;
+	
+	return ($posvol, $negvol, $totvol,
+			$postime, $negtime, $tottime,
+			$posvol+$postime, $negvol+$negtime, $total,
+			$subtot);
+}
+
+
 sub print_thead {
+	my ($volpos, $volneg, $voltot,
+	 	$timepos, $timeneg, $timetot, 
+	 	$totpos, $totneg, $tottot,
+	 	$subtot)= @_;
+	my $volcolor = $voltot >= 0 ? '33CC33' : 'FF0000';
+	my $timecolor = $timetot >= 0 ? '33CC33' : 'FF0000';
+	my $subtotcolor = $subtot >= 0 ? '33CC33' : 'FF0000';
+	my $tottotcolor = $tottot >= 0 ? '33CC33' : 'FF0000';
+	
 	print "<body>
 	<form method='GET'>
 	
-	<table class='legend' cellspacing='0' >
+	<table class='score' cellspacing='0' title='NN Score'>
+		<th>Score</th><th colspan=2><font color=$tottotcolor>$tottot</font></th>
+		<tr>
+			<td>Volume</td>
+			<td>Time</td>
+			<td>Total</td>
+		</tr>
+		<tr>
+			<td><font color=33CC33>+$volpos</font></td>
+			<td><font color=33CC33>+$timepos</font></td>
+			<td><font color=33CC33>+$totpos</font></td>
+		</tr>
+		<tr>
+			<td><font color=FF0000>$volneg</font></td>
+			<td><font color=FF0000>$timeneg</font></td>
+			<td><font color=FF0000>$totneg</font></td>
+		</tr>
+		<tr>
+			<td class='bottom_score'><font color=$volcolor>$voltot</font></td>
+			<td class='bottom_score'><font color=$timecolor>$timetot</font></td>
+			<td class='bottom_score'><font color=$subtotcolor>$subtot</font></td>
+		</tr>
+	</table>
+	
+	<table class='legend' cellspacing='0' title='legend'>
 		<tr>
 			<td class='late_even'>
 			&nbsp

@@ -62,3 +62,15 @@ tr.lateborder3 td {
 	border: 1px solid black;
 	font-size: x-small;
 }
+
+.bottom_score {
+	border-top: 1px dashed black;
+}
+
+.score {
+	position:absolute;
+	margin-left:18%;
+	background: #E6E2E1;
+	border: 1px solid black;
+	font-size: x-small;
+}
