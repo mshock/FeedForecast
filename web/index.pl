@@ -347,7 +347,8 @@ sub get_scores {
 		Date = '$dbdate' and TimeScore < 0");
 	my $postimeq = $nndb->prepare("select sum(TimeScore) from DaemonLogs where 
 		Date = '$dbdate' and TimeScore > 0");
-	my $totalq = $nndb->prepare("select sum(TimeScore), sum(VolumeScore) from DaemonLogs");
+	my $totalq = $nndb->prepare("select sum(TimeScore), sum(VolumeScore) from DaemonLogs where
+		Date <= '$dbdate'");
 	
 	$negvolq->execute();
 	my $negvol = ($negvolq->fetchrow_array())[0];
