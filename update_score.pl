@@ -42,6 +42,8 @@ $select_query->finish();
 
 my ($prevvol, $curvol, $predvol, $recvtime, $prevtime, $predtime)  = @select_result;
 
+
+
 # get time score
 my $time_score = compare_times($prevtime, $predtime, $recvtime); 
 
@@ -53,6 +55,13 @@ my $vol_score = compare_volumes($prevvol, $curvol, $predvol);
 #$time_score = $time_score 
 
 # insert or update DailyScore for the date
+
+# check that the query was successful
+if (!$recvtime) {
+	print "\t[$marketdate] $exchid: no query result, zeroing score\n";
+	$time_score = 0;
+	$vol_score = 0;
+}
 
 my $update_score = $nndb->prepare("update DaemonLogs set
 			VolumeScore = ?,

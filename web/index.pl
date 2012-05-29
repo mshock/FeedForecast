@@ -397,7 +397,7 @@ sub print_thead {
 	<table class='score' cellspacing='0' title='NN Score'>
 		<th>Score</th><th colspan=2><font color=$tottotcolor>$tottot</font></th>
 		<tr>
-			<td>Volume</td>
+			<td >Volume</td>
 			<td>Time</td>
 			<td>Total</td>
 		</tr>

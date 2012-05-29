@@ -63,6 +63,10 @@ tr.lateborder3 td {
 	font-size: x-small;
 }
 
+.right_score {
+	border-left: 1px dashed black;
+}
+
 .bottom_score {
 	border-top: 1px dashed black;
 }
