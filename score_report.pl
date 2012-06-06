@@ -19,7 +19,6 @@ my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to 
 my $dates_q = $nndb->prepare("select distinct Date from DaemonLogs");
 $dates_q->execute();
 my $dates_aref = $dates_q->fetchall_arrayref();
-my $num_dates = scalar(@{$dates_aref});
 $dates_q->finish();
 
 my $vol_aref = query_nndb("select Date,sum(VolumeScore)
@@ -62,6 +61,7 @@ my %time_data = ();
 add_data(\%vol_data, $vol_aref);
 add_data(\%time_data, $time_aref);
 
+my $num_dates = 0;
 foreach my $date (@{$dates_aref}) {
 	$date = @{$date}[0];
 	$date =~ s/\s.*//;
@@ -70,6 +70,7 @@ foreach my $date (@{$dates_aref}) {
 		print "skipping weekend: $date\n";
 		next;
 	}
+	$num_dates++;
 	push @{$dates}, $date;
 	
 	push @{$vol_neg}, $vol_data{$date}{neg} || '0';
