@@ -395,7 +395,7 @@ sub print_thead {
 	<form method='GET'>
 	
 	<table class='score' cellspacing='0' title='NN Score'>
-		<th>Score</th><th colspan=2><font color=$tottotcolor>$tottot</font></th>
+		<th><a href='charts/score_report.xls'>Score</a></th><th colspan=2><font color=$tottotcolor>$tottot</font></th>
 		<tr>
 			<td >Volume</td>
 			<td>Time</td>

@@ -29,6 +29,10 @@ run_nets();
 
 print FeedForecast::currtime() . "\tdone.\n";
 
+print "updating score report...\n";
+`perl score_report.pl`;
+print "done.\n";
+
 # subs
 
 sub run_nets {
