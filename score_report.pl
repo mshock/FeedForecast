@@ -148,8 +148,8 @@ $totchart->add_series(
 );
 $totchart->add_series(
 	name => 'Negative',
-	categories => "=Sheet1!\$J\$1:\$J$num_dates",
-	values => "=Sheet1!\$B\$1:\$B$num_dates"	
+	categories => "=Sheet1!\$A\$1:\$A$num_dates",
+	values => "=Sheet1!\$J\$1:\$J$num_dates"	
 );
 
 
