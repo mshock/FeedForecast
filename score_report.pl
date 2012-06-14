@@ -16,7 +16,8 @@ my $chartdir = $config->chartdir();
 my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
 
 # get all dates which the daemon has run
-my $dates_q = $nndb->prepare("select distinct Date from DaemonLogs");
+my $dates_q = $nndb->prepare("select distinct Date from DaemonLogs where 
+						Date < CAST( FLOOR( CAST(GETDATE() AS FLOAT) ) AS DATETIME)");
 $dates_q->execute();
 my $dates_aref = $dates_q->fetchall_arrayref();
 $dates_q->finish();
