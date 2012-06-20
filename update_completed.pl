@@ -7,31 +7,19 @@ use strict;
 use DBI;
 use Date::Manip qw(ParseDate Date_Cmp DateCalc);
 use Parallel::ForkManager;
+use Fcntl qw(:flock);
 use FeedForecast;
 
 
 my $marketdate = $ARGV[0];
 
-open(LOCK, '<', "logs/$marketdate.lock");
+open(LOCK, '>', "logs/$marketdate.lock");
+flock(LOCK, LOCK_EX | LOCK_NB) or die "lockfile is locked\n";
 my @lock = <LOCK>;
-close LOCK;
-if ($lock[0] =~ /locked/) {
-	print "lockfile is locked, exiting\n";
-	exit;
-}
-else {
-	print "locking lockfile\n";
-	open(LOCK, '>', "logs/$marketdate.lock");
-	print LOCK 'locked';
-	close LOCK;
-}
-
-
+print "lock acquired\n";
+print LOCK $$;
 
 my $config = FeedForecast::loadConfig();
-
-
-
 
 print "starting $marketdate\n";
 
@@ -138,9 +126,8 @@ foreach my $exchange (@{$incomplete}) {
 
 $forkManager->wait_all_children;
 
-print "unlocking lock file\n";
-open(LOCK, '>', "logs/$marketdate.lock");
-print LOCK '';
+print LOCK "\nunlocked";
+flock(LOCK, LOCK_UN) or die "could not release lock...\n$!\n";
 close LOCK;
 
 print "finished $marketdate";
