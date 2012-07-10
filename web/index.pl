@@ -7,6 +7,7 @@ use DBI;
 use Getopt::Std;
 use URI::Escape;
 use Date::Manip qw(ParseDate Date_Cmp DateCalc UnixDate Date_ConvTZ);
+use lib '..';
 use FeedForecast;
 
 use vars qw($opt_d $opt_l $opt_s $opt_t $opt_o $opt_i $opt_z);

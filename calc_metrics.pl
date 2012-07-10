@@ -25,6 +25,19 @@ my $logging = $config->logging();
 # logfile
 my $logfile = $config->cm_logfile();
 
+# get all feeds that need forecasting
+my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
+my $feeds = $nndb->prepare('select desc_ from ds');
+$feeds->execute();
+my $feeds_aref = $feeds->fetchall_arrayref();
+$feeds->finish();
+$nndb->disconnect();
+
+my @feeds;
+foreach my $aref (@{$feeds_aref}) {
+	push @feeds, @{$aref}[0];
+}
+
 if (! -d "logs") {
 	print "no log dir found, creating one...\n";
 	mkdir("logs") or die("could not create log dir: $!\n");
@@ -34,39 +47,24 @@ if (! -d "logs") {
 open (LOGFILE, '>', $logfile);
 
 
-# turns out DS2 doesn't have any historical records here, but other feeds might
-#my $dii = DBI->connect("dbi:ODBC:Driver={SQL Server};Database=$database4;Server=$server1;UID=$db_user1;PWD=$db_pwd1") or die("Couldn't connect to DII: $!\n");
-		
-wout(1,"database connections successful.");
-	
-my $exchange_log = $config->exchange_log();
-
-# check/build exchange log
-load_exchanges();
-
-
-open EXCH, '<', $exchange_log;
-my @exchanges = <EXCH>;
-close EXCH;
-
 # create a ForkManager
 my $forkManager = new Parallel::ForkManager($config->cm_procs());
 
 # iterate over all exchanges, calculate completion time for each date
-foreach (@exchanges) {
+foreach (@feeds) {
 	$forkManager->start and next;
 	chomp;
 	
+	require $_;
+	import $_;
+	
 	my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
- 		
-	my ($exchcode, $exchname) = split(',', $_);
-	
-	open (TFILE, '>', $config->exchmetrics_dir() . "$exchname-$exchcode.log");
-	
-	wout(1, "compiling data for $exchname [$exchcode]...");
+ 	
+ 	# TODO:
+ 	# iterate over all days for this feed
+ 	# call feed-specific calculations, provided in the feed script under config
 	
 	
-	my %finishtimes = calc_finish($exchcode);
 	
 	wout(2, "writing times to database and log...");
 	foreach my $date (sort (keys %finishtimes)) {
