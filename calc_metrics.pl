@@ -1,4 +1,7 @@
 #!/usr/bin/perl -w
+
+# calculate and update historical data
+
 my $start_time = time;
 
 use strict;

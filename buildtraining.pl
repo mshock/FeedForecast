@@ -1,4 +1,7 @@
 #!/usr/bin/perl -w
+
+# build all training data from historical data
+
 my $start_time = time;
 
 use strict;
