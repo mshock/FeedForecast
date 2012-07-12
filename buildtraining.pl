@@ -17,8 +17,10 @@ use FeedForecast;
 
 my $config = FeedForecast::loadConfig();
 
-my $logdir = $config->bt_logdir();
+
 my $btlog = $config->bt_log();
+
+
 
 open(LOG, '>', $btlog);
 print LOG FeedForecast::currtime() . "\tbuildtraining routine started...\n";
@@ -27,8 +29,9 @@ my @feeds = FeedForecast::get_feeds();
 
 for (@feeds) {
 	require "feed_config/$_.pm";
-	import $_ qw(build_training);
+	import $_ qw(init build_training);
 	
+	init();
 	# build training for this feed
 	build_training();
 	
