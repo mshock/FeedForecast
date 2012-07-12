@@ -371,3 +371,66 @@ sub compareTimes {
 	
 	return Date_Cmp($forecasted, $recvd);
 }
+
+# write to stdout
+sub wout {
+	my $config = loadConfig();
+	if (!$config->stdout_logging()) {
+		return;	
+	}
+	my ($level, $line) = @_;
+	my $tabs = "\t" x $level; 
+	print calc_date() . "$tabs$line\n";
+	wlog($level, $line);
+}
+
+# write to log file
+sub wlog {
+	my $config = loadConfig();
+	if ($config->logging()) {
+		my ($level, $line) = @_;
+		my $tabs = "\t" x $level;
+		print LOGFILE calc_date() . "$tabs$line\n";
+	}
+}
+
+
+# compare executiondatetime against marketdate
+# return true if too far in the future/past
+sub compedtmd {
+	my ($edt, $md) = @_;
+	my $config = loadConfig();
+	# convert edt to julian
+	$edt =~ m/(\d{4})-(\d\d)-(\d\d)/;
+	$edt = $1.$2.$3;
+	# add range to marketdate
+	$md =~ m/(\d{4})(\d\d)(\d\d)/;
+	my ($y,$m,$d) = Add_Delta_Days($1,$2,$3,$config->edaterange());
+	$md = $y.$m.$d;
+	if ($edt > $md) {
+		return 1;
+	}
+	($y,$m,$d) = Add_Delta_Days($1,$2,$3,-$config->edaterange());
+	$md = $y.$m.$d;
+	if ($edt < $md) {
+		return 1;
+	}
+	return 0;
+}
+
+# insert a row into the new database format
+sub get_ins_query {
+	my ($table, $cols) = @_;
+	
+	# construct a transaction for all the column codes
+	my $query = '
+		begin tran
+			declare @rid uniqueidentifier
+			set @rid = NEWID()
+			';
+	$query .= "insert into $table (code_id, row_id, value) values (?, \@rid,?\n" x $cols;
+	
+	$query .= 'commit tran
+			go';
+	return $query;
+}
