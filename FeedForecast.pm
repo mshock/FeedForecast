@@ -28,6 +28,12 @@ sub loadConfig {
 	});
 
 	$config->set('conf_file', 'FeedForecast.conf');
+	# check if config file is actually one directory up, for running subscripts directly
+	if (! -f $config->conf_file() && -f '../FeedForecast.conf') {
+		$config->set('conf_file', '../FeedForecast.conf');
+	}
+	
+	
 	# load config file (override with CLI args)
 	$config->file($config->conf_file());
 	
@@ -433,4 +439,21 @@ sub get_ins_query {
 	$query .= 'commit tran
 			go';
 	return $query;
+}
+
+sub get_feeds {
+	my $config = loadConfig();
+	# get all feeds that need forecasting
+	my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
+	my $feeds = $nndb->prepare('select desc_ from ds');
+	$feeds->execute();
+	my $feeds_aref = $feeds->fetchall_arrayref();
+	$feeds->finish();
+	$nndb->disconnect();
+	
+	my @feeds;
+	foreach my $aref (@{$feeds_aref}) {
+		push @feeds, @{$aref}[0];
+	}
+	return @feeds;
 }

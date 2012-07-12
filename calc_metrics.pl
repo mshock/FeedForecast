@@ -5,6 +5,7 @@
 my $start_time = time;
 
 use strict;
+use Symbol 'delete_package';
 use File::stat;
 use Time::localtime;
 use DBI;
@@ -19,18 +20,6 @@ my $config = FeedForecast::loadConfig();
 # logfile
 my $logfile = $config->cm_logfile();
 
-# get all feeds that need forecasting
-my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
-my $feeds = $nndb->prepare('select desc_ from ds');
-$feeds->execute();
-my $feeds_aref = $feeds->fetchall_arrayref();
-$feeds->finish();
-$nndb->disconnect();
-
-my @feeds;
-foreach my $aref (@{$feeds_aref}) {
-	push @feeds, @{$aref}[0];
-}
 
 if (! -d "logs") {
 	print "no log dir found, creating one...\n";
@@ -40,16 +29,26 @@ if (! -d "logs") {
 
 open (LOGFILE, '>', $logfile);
 
-
 # create a ForkManager
 my $forkManager = new Parallel::ForkManager($config->cm_procs());
+
+my @feeds = FeedForecast::get_feeds();
 
 # iterate over all feeds
 foreach (@feeds) {
 	$forkManager->start and next;
 	chomp;
 	
-	`perl $_`;
+	require "feed_config/$_.pm";
+	import $_ qw(init calc_metrics);
+	
+	# run initialization routines for this feed
+	init();
+	# calculate and insert historical metrics for this feed
+	calc_metrics();
+	# clean up package data
+	delete_package($_);
+	
 	
 	$forkManager->finish;
 }
