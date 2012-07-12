@@ -16,6 +16,21 @@ our @EXPORT_OK = qw(init calc_metrics build_training run_nets);
 # load config variables
 my $config = FeedForecast::loadConfig();
 
+my %codes = (
+	offset_in => 199,
+	dom_in => 200,
+	dow_in => 201,
+	vol_in => 202,
+	vol_out => 203,
+	offset_out => 204,
+	exchid_id => 205,
+	exchname_id => 206,
+	date_id => 207,
+	finishtime_his => 208,
+	vol_his => 209,
+);
+
+
 1;
 
 # initialization function
@@ -63,11 +78,11 @@ sub insert {
 	foreach my $date (sort (keys %finishtimes)) {
 		print TFILE "$date\t$finishtimes{$date}{'complete'}\t$finishtimes{$date}{'count'}\n";
 		my @ins_values = (
-			207 => $date,
-			205 => $exchcode,
-			206 => $exchname,
-			208 => $finishtimes{$date}{complete},
-			209 => $finishtimes{$date}{count},
+			$codes{date_id} => $date,
+			$codes{exchcode_id} => $exchcode,
+			$codes{exchname_id} => $exchname,
+			$codes{finishtime_his} => $finishtimes{$date}{complete},
+			$codes{vol_his} => $finishtimes{$date}{count},
 		);
 		
 		#print "inserting: $date,$exchcode,". asciiify($exchname).",$finishtimes{$date}{'complete'},$finishtimes{$date}{'count'}\n";
@@ -97,8 +112,8 @@ sub calc_finish {
 									inner join history b
 									on a.row_id = b.row_id  
 									where 
-									a.code_id = 205
-									and b.code_id = 207
+									a.code_id = $codes{exchid_id}
+									and b.code_id = $codes{date_id}
 									and a.value = ?");
 	
 	
@@ -275,10 +290,11 @@ sub load_exchanges {
 		my $ds2_c = DBI->connect($config->ds2c_connection()) or die("Couldn't connect to DS2_change: $!\n");  
 		my $ds2 = DBI->connect($config->ds2_connection()) or die("Couldn't connect to DS2: $!\n");
 		
-		# get a list of all the exchanges present in DS2 
+
 		my $get_exchanges = $ds2_c->prepare("SELECT distinct ExchIntCode
   			FROM [DataStream2_Change].[arc].[DS2PrimQtPrc]
   			where MarketDate > '$date_begin_init'");
+  			
   		my $get_exchname = $ds2->prepare("SELECT [ExchName]
   			FROM [DataStream2].[dbo].[DS2Exchange] with (NOLOCK) 
   			where ExchIntCode = ?");
@@ -349,7 +365,7 @@ sub build_training {
 										inner join history b 
 										on a.row_id = b.row_id
 										where
-										a.code_id = 205");
+										a.code_id = $codes{exchid_id}");
 	
 	$nndb_exchanges->execute();
 	my $exchanges = $nndb_exchanges->fetchall_arrayref();
@@ -364,9 +380,22 @@ sub build_training {
 		
 		my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");  
 		
-		my $nndb_count = $nndb->prepare("select count(*) from FinishTimes where ExchID = ?");
-		my $nndb_all = $nndb->prepare("select * from FinishTimes where ExchID = ? order by Date ASC");
+		my $nndb_count = $nndb->prepare("select count(*) from history
+						where
+						code_id = $codes{exchid_id}");
 		
+		my $nndb_all = $nndb->prepare("select a.value, b.value, c.value 
+			from history a 
+			inner join history b on a.row_id = b.row_id
+			inner join history c on b.row_id = c.row_id
+			inner join history d on c.row_id = d.row_id
+			where
+			a.code_id = $codes{date_id}
+			and b.code_id = $codes{finishtime_his}
+			and c.code_id = $codes{vol_his}
+			and d.code_id = $codes{exchid_id}
+			and d.value = ?
+			order by a.value asc");
 		
 		my ($exchid, $exchname) = @{$exchange};
 		open ELOG, '>', "$logdir/$exchname-$exchid.log";
@@ -414,7 +443,7 @@ sub build_training {
 				$last = 1;
 			}
 			
-			my ($date, $finish, $volume) = ($row[1],$row[4],$row[5]);
+			my ($date, $finish, $volume) = @row;
 			if (!$finish || !$volume) {
 				#print LOG "missing record column, skipping $date\n";
 				next;
@@ -601,11 +630,25 @@ sub run_nets {
 			my $to2 = int($result[0] + .5);
 			my $vol2 = int($result[1] + .5);
 			my $curdate = FeedForecast::currtime();
-			my $nndb_insert = $nndb->prepare("insert into NetResults 
-				(Date, ExchID, ExchName, InputOffset, DayofMonth, DayofWeek, InputVolume, OutputOffset, OutputVolume, InsDateTime) 
-				values
-				('$date','$exchid','$exchname','$timeoffset','$dom','$dow','$vol','$to2','$vol2','$curdate')");
-			$nndb_insert->execute() if !$dryrun;
+			
+			my $ins_query = FeedForecast::get_ins_query('results',9);
+			
+			
+			my $nndb_insert = $nndb->prepare($ins_query);
+			
+			my @insert_values = (
+				$codes{date_id} => $date,
+				$codes{exchid_id} => $exchid,
+				$codes{exchname_id} => $exchname,
+				$codes{offset_in} => $timeoffset,
+				$codes{dom_in} => $dom,
+				$codes{dow_in} => $dow,
+				$codes{vol_in} => $vol,
+				$codes{offset_out} => $to2,
+				$codes{vol_out} => $vol2,
+			);
+				
+			$nndb_insert->execute(@insert_values) if !$dryrun;
 			$nndb_insert->finish();
 			open LOG, '>>', $runnet_log;
 			print LOG "$exchname,$exchid,$timeoffset,$dom,$dow,$vol,$to2,$vol2\n";
