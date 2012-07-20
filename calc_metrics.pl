@@ -6,8 +6,6 @@ my $start_time = time;
 
 use strict;
 use Symbol 'delete_package';
-use File::stat;
-use Time::localtime;
 use DBI;
 use Date::Calc qw(Add_Delta_Days);
 use Parallel::ForkManager;
@@ -35,19 +33,18 @@ my $forkManager = new Parallel::ForkManager($config->cm_procs());
 my @feeds = FeedForecast::get_feeds();
 
 # iterate over all feeds
-foreach (@feeds) {
+foreach my $feed (@feeds) {
 	$forkManager->start and next;
-	chomp;
 	
-	require "feed_config/$_.pm";
-	import $_ qw(init calc_metrics);
+	require "feed_config/$feed.pm";
+	import $feed qw(calc_metrics);
 	
 	# run initialization routines for this feed
 	init();
 	# calculate and insert historical metrics for this feed
 	calc_metrics();
 	# clean up package data
-	delete_package($_);
+	delete_package($feed);
 	
 	
 	$forkManager->finish;

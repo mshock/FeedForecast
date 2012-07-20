@@ -27,16 +27,16 @@ print LOG FeedForecast::currtime() . "\tbuildtraining routine started...\n";
 
 my @feeds = FeedForecast::get_feeds();
 
-for (@feeds) {
-	require "feed_config/$_.pm";
-	import $_ qw(init build_training);
+foreach my $feed (@feeds) {
+	require "feed_config/$feed.pm";
+	import $feed qw(build_training);
 	
 	init();
 	# build training for this feed
 	build_training();
 	
 	# clean up feed package
-	delete_package($_);
+	delete_package($feed);
 }
 
 

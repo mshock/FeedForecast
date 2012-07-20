@@ -1,17 +1,21 @@
 #!perl 
 
 # this is a configuration script for this feed
-# will be imported, subs will be called
+# subs will be exported as needed
 
 package DS2PrimQtPrc;
 
 use strict;
+use File::stat;
+use Time::localtime;
 use Exporter;
+use Scalar::Util qw(looks_like_number);
 use lib '..';
 use FeedForecast;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(init calc_metrics build_training run_nets);
+our @EXPORT = qw(init);
+our @EXPORT_OK = qw(calc_metrics build_training run_nets);
 
 # load config variables
 my $config = FeedForecast::loadConfig();
@@ -637,7 +641,7 @@ sub run_nets {
 			my $nndb_insert = $nndb->prepare($ins_query);
 			
 			my @insert_values = (
-				$codes{date_id} => $date,
+				$codes{date_id} => "convert(varchar, convert(datetime, '$date'), 121)",
 				$codes{exchid_id} => $exchid,
 				$codes{exchname_id} => $exchname,
 				$codes{offset_in} => $timeoffset,
@@ -647,7 +651,7 @@ sub run_nets {
 				$codes{offset_out} => $to2,
 				$codes{vol_out} => $vol2,
 			);
-				
+			print $ins_query;
 			$nndb_insert->execute(@insert_values) if !$dryrun;
 			$nndb_insert->finish();
 			open LOG, '>>', $runnet_log;

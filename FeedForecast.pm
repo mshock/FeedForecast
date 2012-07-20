@@ -10,7 +10,11 @@ use AppConfig qw(:argcount);
 use Date::Calc qw(Add_Delta_Days Day_of_Week);
 use Date::Manip qw(ParseDate Date_Cmp DateCalc UnixDate Date_ConvTZ);
 use Net::SMTP;
+use Exporter;
 use DBI;
+
+our @ISA = qw(Exporter);
+our @EXPORT = qw(wout);
 
 1;
 
@@ -84,7 +88,7 @@ sub loadConfig {
 		$config->ds2_pass()));
 	# NNDB info
 	#$config->set('nndb_server','localhost');
-	$config->set('nndb_database','NNDB');
+	$config->set('nndb_database','NNDB2');
 	#$config->set('nndb_user','');
 	#$config->set('nndb_pass','');
 	$config->set('nndb_connection',sprintf("dbi:ODBC:Driver={SQL Server};Database=%s;Server=%s;UID=%s;PWD=%s",
@@ -208,14 +212,6 @@ sub exectime {
 sub calc_date {
 	my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = gmtime(time);	
 	return sprintf("%u%02u%02u", $year + 1900,$mon + 1,$mday);
-}
-
-# write to stdout
-sub wout {
-	my ($level, $line) = @_;
-	my $tabs = "\t" x $level; 
-	print exectime() . "$tabs$line\n";
-	wlog($level, $line);
 }
 
 # function to calculate time of day from minute offset
@@ -387,19 +383,7 @@ sub wout {
 	my ($level, $line) = @_;
 	my $tabs = "\t" x $level; 
 	print calc_date() . "$tabs$line\n";
-	wlog($level, $line);
 }
-
-# write to log file
-sub wlog {
-	my $config = loadConfig();
-	if ($config->logging()) {
-		my ($level, $line) = @_;
-		my $tabs = "\t" x $level;
-		print LOGFILE calc_date() . "$tabs$line\n";
-	}
-}
-
 
 # compare executiondatetime against marketdate
 # return true if too far in the future/past
@@ -434,7 +418,7 @@ sub get_ins_query {
 			declare @rid uniqueidentifier
 			set @rid = NEWID()
 			';
-	$query .= "insert into $table (code_id, row_id, value) values (?, \@rid,?\n" x $cols;
+	$query .= "insert into $table (code_id, row_id, value) values (?, \@rid,?)\n" x $cols;
 	
 	$query .= 'commit tran
 			go';
