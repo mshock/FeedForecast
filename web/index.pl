@@ -468,7 +468,10 @@ sub print_thead {
 			<th colspan='14' ><h2>Market Date $headerdate$headertime</h2></th>
 		</tr>
 		<tr>
-			<th colspan='14'><a class='redlink' href='http://slider.qai.qaisoftware.com:1337/' target='_blank' title='try this new tool!'>Lizak Header Code Utility</a></th>
+			<th colspan='14'><a class='redlink' href='http://slider.qai.qaisoftware.com:1337/' target='_blank' title='try out this new tool!'>Lizak Header Code Utility</a></th>
+		</tr>
+		<tr>
+			<th colspan='14'><hr></th>
 		</tr>
 		<tr>
 			<th colspan='1'><a href='?date=$prevdate' class='redlink'><<</a> previous ($prevdate)</th>
