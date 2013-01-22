@@ -397,7 +397,7 @@ sub print_thead {
 	<table class='score' cellspacing='0' title='NN Score'>
 		<th><a href='charts/score_report.xls'>Score</a></th><th colspan=2><font color=$tottotcolor>$tottot</font></th>
 		<tr>
-			<td >Volume</td>
+			<td>Volume</td>
 			<td>Time</td>
 			<td>Total</td>
 		</tr>
@@ -465,10 +465,13 @@ sub print_thead {
 	<table cellspacing='0' width='100%'>
 		<thead>
 		<tr>
-			<th colspan='14' ><h2>Market Date $headerdate$headertime </h2></th>
+			<th colspan='14' ><h2>Market Date $headerdate$headertime</h2></th>
 		</tr>
 		<tr>
-			<th colspan='1'><a href='?date=$prevdate'><<</a> previous ($prevdate)</th>
+			<th colspan='14'><a class='redlink' href='http://slider.qai.qaisoftware.com:1337/' target='_blank' title='try this new tool!'>Lizak Header Code Utility</a></th>
+		</tr>
+		<tr>
+			<th colspan='1'><a href='?date=$prevdate' class='redlink'><<</a> previous ($prevdate)</th>
 			<th colspan='8'>
 				<input type='submit' value='search'/> 
 				<input type='reset' value='reset' onclick='parent.location=\"?\"'/>
@@ -485,7 +488,7 @@ sub print_thead {
 				
 				
 			</th>
-			<th colspan='3'>($nextdate) next <a href='?date=$nextdate'>>></a></th>
+			<th colspan='3'>($nextdate) next <a href='?date=$nextdate' class='redlink'>>></a></th>
 		</tr>
 		<tr>
 			<th><input type='submit' class='$colsort[0]' name='sort' value='Exchange Name' $header_hover /></th>

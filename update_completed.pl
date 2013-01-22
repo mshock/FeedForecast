@@ -43,11 +43,10 @@ foreach my $exchange (@{$incomplete}) {
 	$forkManager->start and next;
 	
 	# create database stuff, due to fork
-	my $ds2_c = DBI->connect($config->ds2c_connection()) or die("Couldn't connect to DS2_change: $!\n");  
+	my $prod1 = DBI->connect($config->prod1_connection()) or die("Couldn't connect to prod1: $!\n");  
 	my $nndb = DBI->connect($config->nndb_connection()) or die("Couldn't connect to NNDB: $!\n");
 	
-	my $info_query = $ds2_c->prepare(
-	"select top 1 [ExecutionDateTime],[MakeUpdateRunDate],[MakeUpdateSequence], [BuildNumber], count([...]) as c
+	my $old_query = "select top 1 [ExecutionDateTime],[MakeUpdateRunDate],[MakeUpdateSequence], [BuildNumber], count([...]) as c
 			from [DataStream2_Change].[dbo].[DS2PrimQtPrc],
 			[NTCP-DIS1].disforlegacy.dbo.makeupdateinfo
 			with (NOLOCK)
@@ -58,20 +57,61 @@ foreach my $exchange (@{$incomplete}) {
 			and DataFeedId = 'DS2_EQIND_DAILY'
 			and ExchIntCode = ?
 			group by [ExecutionDateTime],[MakeUpdateRunDate],[MakeUpdateSequence], [BuildNumber]
-			order by c DESC");
+			order by c DESC";
 	
+	my $new_query2 = "select top 1 [ExecutionDateTime],Filedate,filenum,BuildNumber, count([...]) as c
+				from
+				[TQALic].dbo.[PackageQueue] q with (NOLOCK)
+				join
+				[172.22.85.170].DataIngestionInfrastructure.dbo.MakeUpdateInfo i with (NOLOCK)
+				on i.DISTransactionNumber = q.TransactionNumber
+				join
+				[172.22.85.170].[DataStream2_Change].[dbo].[DS2PrimQtPrc] d with (NOLOCK)
+				on q.TransactionNumber = d.[...]
+				
+				where
+				 DataFeedId = 'DS2_EQIND_DAILY'
+				 and RefPrcTypCode = 1 
+				 and MarketDate = ?
+				 and ExchIntCode = ?
+				group by ExecutionDateTime, FileDate, FileNum, BuildNumber
+				order by c DESC";
+	
+	my $new_query1 = "select top 1 [ExecutionDateTime],Filedate,filenum,BuildNumber, count([...]) as c
+				from DataIngestionInfrastructure.dbo.MakeUpdateInfo i
+				join 
+				[172.22.85.164].[TQALic].dbo.[PackageQueue] q
+				on i.DISTransactionNumber = q.TransactionNumber
+				join
+				[DataStream2_Change].[dbo].[DS2PrimQtPrc] d
+				on q.TransactionNumber = d.[...]
+				--with (NOLOCK)
+				where
+				 DataFeedId = 'DS2_EQIND_DAILY'
+				 and RefPrcTypCode = 1 
+				 and MarketDate = ?
+				 and ExchIntCode = ?
+				group by ExecutionDateTime, FileDate, FileNum, BuildNumber
+				order by c DESC
+	";
+	my $info_query = $prod1->prepare( $new_query2
+	) or warn "could not prepare new query\n";
 	
 	my ($exchid, $insdt, $curvol) = @{$exchange};
 	
+	#open LOG, '>>update_completed.log';
+	#print LOG "$new_query\nmd:$marketdate\nexchid:$exchid\n";
+	#close LOG;
+	
 	print "checking $exchid, $insdt\n";
 	
-	$info_query->execute($marketdate, $exchid);
+	$info_query->execute($marketdate, $exchid) or warn "info query failed in update_completed\n";
 	my @results = $info_query->fetchrow_array();		
 	$info_query->finish();
-	$ds2_c->disconnect();
+	$prod1->disconnect();
 	
 	my ($exec_time, $filedate, $filenum, $buildnum, $count) = @results;
-	
+	#2013-01-22 11:06:54.863,	2013-01-21 00:00:00.000,	23,	11,	219
 	print " $exchid results: @results\n";
 	
 	# skip to next if no result

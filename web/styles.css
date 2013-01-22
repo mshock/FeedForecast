@@ -73,8 +73,13 @@ tr.lateborder3 td {
 
 .score {
 	position:absolute;
-	margin-left:16%;
+	margin-left:12%;
 	background: #E6E2E1;
 	border: 1px solid black;
 	font-size: x-small;
 }
+
+a.redlink:link { color:'#A82828'; text-decoration:none;}
+a.redlink:visited { color:'#A82828'; text-decoration:none;}
+a.redlink:hover { color:'#F05D5D'; }
+a.redlink:active { color:'#A82828'; text-decoration:none;}

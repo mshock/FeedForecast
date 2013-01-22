@@ -44,7 +44,15 @@ sub loadConfig {
 	$config->set('stdout_logging', 1);
 	# calc_metrics logfile
 	$config->set('cm_logfile','logs/calc_metrics.log');
-	
+
+	$config->set('prod1_database','master');
+	#$config->set('disfl_user','');
+	#$config->set('disfl_pass','');
+	$config->set('prod1_connection',sprintf("dbi:ODBC:Driver={SQL Server};Database=%s;Server=%s;UID=%s;PWD=%s",
+		$config->prod1_database(),
+		$config->prod1_server(),
+		$config->prod1_user(),
+		$config->prod1_pass()));
 	# keep addresses and credentials in non-version controlled .conf file
 	# DISforLegacy info
 	#$config->set('disfl_server','localhost');
