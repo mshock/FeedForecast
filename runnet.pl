@@ -22,7 +22,7 @@ foreach my $feed (@feeds) {
 	#"feed_config::$feed"->require;
 	#eval "use feed_config::$feed ";
 	require "feed_config/$feed.pm";
-	import $feed qw(run_nets);
+	import $feed qw(init run_nets);
 	#$feed->import(qw(init run_nets));
 	
 	init();

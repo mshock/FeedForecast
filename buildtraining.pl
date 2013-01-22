@@ -29,7 +29,7 @@ my @feeds = FeedForecast::get_feeds();
 
 foreach my $feed (@feeds) {
 	require "feed_config/$feed.pm";
-	import $feed qw(build_training);
+	import $feed qw(init build_training);
 	
 	init();
 	# build training for this feed

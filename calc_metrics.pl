@@ -37,7 +37,7 @@ foreach my $feed (@feeds) {
 	$forkManager->start and next;
 	
 	require "feed_config/$feed.pm";
-	import $feed qw(calc_metrics);
+	import $feed qw(init calc_metrics);
 	
 	# run initialization routines for this feed
 	init();
